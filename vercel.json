@@ -1,4 +1,11 @@
 {
+  "version": 2,
+  "builds": [
+    { "src": "api/uploadthing.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/uploadthing", "dest": "api/uploadthing.js" }
+  ],
   "functions": {
     "api/uploadthing.js": {
       "maxDuration": 30
