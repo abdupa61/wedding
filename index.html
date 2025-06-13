@@ -224,11 +224,13 @@
                 });
                 
                 if (!presignedResponse.ok) {
-                    const errorData = await presignedResponse.json();
-                    throw new Error(errorData.message || 'Presigned URL alınamadı');
+                    const responseText = await presignedResponse.text();
+                    console.error('API Response:', responseText);
+                    throw new Error(`API Hatası (${presignedResponse.status}): ${responseText.substring(0, 200)}...`);
                 }
                 
                 const presignedData = await presignedResponse.json();
+                console.log('API Response:', presignedData); // Debug için
                 const uploadedUrls = [];
                 
                 // 2. Her dosyayı uploadThing'e yükle
