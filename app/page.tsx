@@ -434,19 +434,30 @@ export default function Home() {
         {selectedFiles.length > 0 && (
           <div className="mt-3 md:mt-4 space-y-2">
             <h3 className="font-semibold text-gray-700 text-sm sm:text-base">Seçilen Dosyalar:</h3>
-            <div className="max-h-32 sm:max-h-40 overflow-y-auto space-y-2">
+            <div className="max-h-32 sm:max-h-80 overflow-y-auto grid grid-cols-3 gap-2">
               {selectedFiles.map((file, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-white border rounded-lg">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <p className="text-xs sm:text-sm font-medium text-gray-700 truncate">{file.name}</p>
-                    <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                <div key={index} className="bg-white border rounded-lg p-2 space-y-2">
+                  {file.type.startsWith('image/') && (
+                    <div className="relative">
+                      <img 
+                        src={URL.createObjectURL(file)} 
+                        alt={file.name}
+                        className="w-full h-20 object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="text-xs sm:text-sm font-medium text-gray-700 truncate">{file.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                    </div>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="text-red-500 hover:text-red-700 font-bold text-sm sm:text-base p-1"
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removeFile(index)}
-                    className="text-red-500 hover:text-red-700 font-bold text-sm sm:text-base p-1"
-                  >
-                    ✕
-                  </button>
                 </div>
               ))}
             </div>
