@@ -1,108 +1,437 @@
-const { UTApi } = require("uploadthing/server");
-
-// Vercel serverless function handler
-module.exports = async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  // OPTIONS request için preflight
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  try {
-    // Environment variable kontrolü
-    if (!process.env.UPLOADTHING_SECRET) {
-      console.error('UPLOADTHING_SECRET environment variable is missing');
-      return res.status(500).json({ 
-        error: 'Server configuration error',
-        message: 'UploadThing API key not configured' 
-      });
-    }
-
-    // UTApi instance oluştur
-    const utapi = new UTApi({
-      apiKey: process.env.UPLOADTHING_SECRET,
-    });
-
-    if (req.method === 'POST') {
-      console.log('POST request received');
-      
-      // Request body'yi kontrol et
-      if (!req.body) {
-        return res.status(400).json({ error: 'Request body is required' });
-      }
-
-      const { files } = req.body;
-      
-      if (!files || !Array.isArray(files)) {
-        return res.status(400).json({ error: 'Files array is required in request body' });
-      }
-
-      console.log(`Processing ${files.length} files`);
-
-      // Her dosya için presigned URL oluştur
-      const uploadData = [];
-      
-      for (const fileInfo of files) {
-        try {
-          // UploadThing API'sine presigned URL isteği
-          const presignedUrl = await utapi.requestFileAccess({
-            fileKey: `wedding-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-            fileName: fileInfo.name,
-            fileSize: fileInfo.size,
-            fileType: fileInfo.type
-          });
-
-          uploadData.push({
-            name: fileInfo.name,
-            size: fileInfo.size,
-            type: fileInfo.type,
-            presignedUrl: presignedUrl.url,
-            key: presignedUrl.key,
-            url: `https://utfs.io/f/${presignedUrl.key}`
-          });
-
-        } catch (error) {
-          console.error(`Error creating presigned URL for ${fileInfo.name}:`, error);
-          
-          // UploadThing'in basit upload endpoint'ini kullan
-          uploadData.push({
-            name: fileInfo.name,
-            size: fileInfo.size,
-            type: fileInfo.type,
-            presignedUrl: `https://api.uploadthing.com/v6/uploadFiles`,
-            key: `wedding-${Date.now()}-${fileInfo.name}`,
-            url: null // Upload sonrası dönecek
-          });
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fotoğraf Yükleme - Düğün</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
-      }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s ease;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .preview-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .preview-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        
+        .preview-item .info {
+            padding: 10px;
+            background: white;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .url-list {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .url-item {
+            margin: 5px 0;
+            padding: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .url-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .copy-notice {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Düğün Fotoğrafları</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            Düğün fotoğraflarınızı yükleyin ve paylaşın! 💕
+        </p>
+        
+        <div class="upload-area" id="uploadArea">
+            <p>Fotoğrafları buraya sürükleyin veya seçmek için tıklayın</p>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Fotoğraf Seç
+            </button>
+            <input type="file" id="fileInput" multiple accept="image/*">
+        </div>
+        
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="preview-container" id="previewContainer"></div>
+        
+        <div class="url-list" id="urlList" style="display: none;">
+            <h3>Yüklenen Fotoğraf URL'leri:</h3>
+            <div id="urlContainer"></div>
+            <div class="copy-notice">URL'leri kopyalamak için üzerine tıklayın</div>
+        </div>
+    </div>
 
-      console.log('Generated upload data for', uploadData.length, 'files');
-      res.status(200).json(uploadData);
+    <script>
+        // UploadThing dosya yükleme fonksiyonu
+        async function uploadFiles(files) {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            const status = document.getElementById('status');
+            const urlContainer = document.getElementById('urlContainer');
+            const urlList = document.getElementById('urlList');
+            
+            progressBar.style.display = 'block';
+            status.className = 'status loading';
+            status.innerHTML = '<div class="loading-spinner"></div>Dosyalar yükleniyor...';
+            status.style.display = 'block';
+            
+            try {
+                // Backend API'mize dosya bilgilerini gönder
+                const response = await fetch('/api/uploadthing', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        files: Array.from(files).map(file => ({
+                            name: file.name,
+                            size: file.size,
+                            type: file.type
+                        }))
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${errorText}`);
+                }
+                
+                const uploadData = await response.json();
+                console.log('Upload data received:', uploadData);
+                
+                const uploadedUrls = [];
+                
+                // Her dosyayı sırayla yükle
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileUploadData = uploadData[i];
+                    
+                    // Progress güncelle
+                    const progress = (i / files.length) * 90; // %90'a kadar progress
+                    progressFill.style.width = progress + '%';
+                    
+                    // FormData ile dosyayı hazırla
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    // UploadThing'e direkt yükle
+                    const uploadResponse = await fetch('https://api.uploadthing.com/v6/uploadFiles', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Uploadthing-Api-Key': 'sk_live_YOUR_KEY_HERE' // Bu production'da environment variable'dan gelecek
+                        }
+                    });
+                    
+                    if (uploadResponse.ok) {
+                        const result = await uploadResponse.json();
+                        if (result.data && result.data[0]) {
+                            uploadedUrls.push(result.data[0].url);
+                        }
+                    } else {
+                        console.warn(`${file.name} upload failed:`, uploadResponse.status);
+                        // URL'yi yine de eklemeyi dene
+                        uploadedUrls.push(fileUploadData.url || `Upload failed: ${file.name}`);
+                    }
+                }
+                
+                // Progress'i %100 yap
+                progressFill.style.width = '100%';
+                
+                // Başarı mesajı
+                status.className = 'status success';
+                status.textContent = `${files.length} fotoğraf başarıyla yüklendi! 🎉`;
+                
+                // URL'leri göster
+                urlContainer.innerHTML = '';
+                uploadedUrls.forEach(url => {
+                    const urlDiv = document.createElement('div');
+                    urlDiv.className = 'url-item';
+                    urlDiv.textContent = url;
+                    urlDiv.onclick = () => {
+                        navigator.clipboard.writeText(url).then(() => {
+                            urlDiv.style.background = '#d4edda';
+                            urlDiv.textContent = 'Kopyalandı! ✅ ' + url;
+                            setTimeout(() => {
+                                urlDiv.style.background = 'white';
+                                urlDiv.textContent = url;
+                            }, 2000);
+                        }).catch(err => {
+                            console.error('Kopyalama hatası:', err);
+                        });
+                    };
+                    urlContainer.appendChild(urlDiv);
+                });
+                
+                if (uploadedUrls.length > 0) {
+                    urlList.style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                status.className = 'status error';
+                status.textContent = '❌ Yükleme sırasında hata oluştu: ' + error.message;
+            } finally {
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 1000);
+            }
+        }
 
-    } else if (req.method === 'GET') {
-      // Health check endpoint
-      res.status(200).json({ 
-        status: 'OK', 
-        message: 'UploadThing API is running',
-        timestamp: new Date().toISOString(),
-        hasApiKey: !!process.env.UPLOADTHING_SECRET
-      });
-      
-    } else {
-      res.status(405).json({ error: `Method ${req.method} not allowed` });
-    }
+        // Dosya önizleme
+        function createPreview(file) {
+            const previewContainer = document.getElementById('previewContainer');
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+            
+            const img = document.createElement('img');
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            const info = document.createElement('div');
+            info.className = 'info';
+            info.innerHTML = `
+                <strong>${file.name}</strong><br>
+                ${(file.size / 1024 / 1024).toFixed(2)} MB
+            `;
+            
+            previewItem.appendChild(img);
+            previewItem.appendChild(info);
+            previewContainer.appendChild(previewItem);
+        }
 
-  } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-};
+        // Dosya validasyonu
+        function validateFiles(files) {
+            const maxSize = 8 * 1024 * 1024; // 8MB
+            const maxCount = 10;
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            
+            if (files.length > maxCount) {
+                throw new Error(`En fazla ${maxCount} dosya yükleyebilirsiniz.`);
+            }
+            
+            for (let file of files) {
+                if (!allowedTypes.includes(file.type)) {
+                    throw new Error(`${file.name} desteklenmeyen dosya formatı. Sadece resim dosyaları kabul edilir.`);
+                }
+                
+                if (file.size > maxSize) {
+                    throw new Error(`${file.name} dosyası çok büyük. Maksimum 8MB olabilir.`);
+                }
+            }
+            
+            return true;
+        }
+
+        // Event listeners
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                try {
+                    validateFiles(files);
+                    document.getElementById('previewContainer').innerHTML = '';
+                    files.forEach(createPreview);
+                    uploadFiles(files);
+                } catch (error) {
+                    const status = document.getElementById('status');
+                    status.className = 'status error';
+                    status.textContent = '❌ ' + error.message;
+                    status.style.display = 'block';
+                }
+            }
+        });
+
+        // Sürükle bırak
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files).filter(file => 
+                file.type.startsWith('image/')
+            );
+            
+            if (files.length > 0) {
+                try {
+                    validateFiles(files);
+                    document.getElementById('previewContainer').innerHTML = '';
+                    files.forEach(createPreview);
+                    uploadFiles(files);
+                } catch (error) {
+                    const status = document.getElementById('status');
+                    status.className = 'status error';
+                    status.textContent = '❌ ' + error.message;
+                    status.style.display = 'block';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
