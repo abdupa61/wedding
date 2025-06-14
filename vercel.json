@@ -1,4 +1,11 @@
 {
+  "version": 2,
+  "builds": [
+    {
+      "src": "next.config.js",
+      "use": "@vercel/next"
+    }
+  ],
   "functions": {
     "api/uploadthing.js": {
       "maxDuration": 30
@@ -7,5 +14,12 @@
   "env": {
     "UPLOADTHING_SECRET": "@uploadthing-secret",
     "UPLOADTHING_APP_ID": "@uploadthing-app-id"
-  }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ],
+  "outputDirectory": "public"
 }
