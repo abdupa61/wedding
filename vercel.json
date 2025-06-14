@@ -1,18 +1,8 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/uploadthing.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/uploadthing", "dest": "api/uploadthing.js" }
-  ],
   "functions": {
     "api/uploadthing.js": {
+      "runtime": "nodejs18.x",
       "maxDuration": 30
     }
-  },
-  "env": {
-    "UPLOADTHING_SECRET": "@uploadthing-secret",
-    "UPLOADTHING_APP_ID": "@uploadthing-app-id"
   }
 }
