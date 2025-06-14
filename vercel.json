@@ -4,8 +4,10 @@
       "maxDuration": 30
     }
   },
-  "env": {
-    "UPLOADTHING_SECRET": "@uploadthing-secret",
-    "UPLOADTHING_APP_ID": "@uploadthing-app-id"
-  }
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    }
+  ]
 }
