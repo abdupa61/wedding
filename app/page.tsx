@@ -14,6 +14,10 @@ export default function Home() {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
+  // Başarı mesajları için state'ler
+  const [showFileSuccess, setShowFileSuccess] = useState(false);
+  const [showAudioSuccess, setShowAudioSuccess] = useState(false);
+  
   // Ses kaydı için isim state'i eklendi
   const [recordingName, setRecordingName] = useState("");
   const [showNameInput, setShowNameInput] = useState(false);
@@ -27,6 +31,25 @@ export default function Home() {
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Başarı mesajlarını otomatik gizleme
+  useEffect(() => {
+    if (showFileSuccess) {
+      const timer = setTimeout(() => {
+        setShowFileSuccess(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showFileSuccess]);
+
+  useEffect(() => {
+    if (showAudioSuccess) {
+      const timer = setTimeout(() => {
+        setShowAudioSuccess(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showAudioSuccess]);
+
   // Dosya yükleme için hook
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res: any[]) => {
@@ -34,6 +57,11 @@ export default function Home() {
       setSelectedFiles([]);
       setIsUploadingFile(false);
       setUploadProgress(0);
+      setShowFileSuccess(true); // Başarı mesajını göster
+      // File input'u da temizle
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     },
     onUploadError: (error: Error) => {
       console.error("❌ Dosya yükleme hatası:", error);
@@ -58,6 +86,7 @@ export default function Home() {
       setConvertedBlob(null);
       setRecordingTime(0);
       setIsUploading(false);
+      setShowAudioSuccess(true); // Başarı mesajını göster
     },
     onUploadError: (error: Error) => {
       console.error("❌ Ses yükleme hatası:", error);
@@ -76,6 +105,10 @@ export default function Home() {
     if (files) {
       const fileArray = Array.from(files);
       setSelectedFiles(prev => [...prev, ...fileArray]);
+    }
+    // Input'u temizle ki aynı dosya tekrar seçilebilsin
+    if (event.target) {
+      event.target.value = '';
     }
   };
 
@@ -316,6 +349,21 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center px-4 py-8 sm:px-6 md:px-8 lg:px-24">
+      {/* Başarı Mesajları - Fixed pozisyon */}
+      {showFileSuccess && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+          <span className="text-lg">✅</span>
+          <span className="font-semibold">Dosyalar başarıyla gönderildi!</span>
+        </div>
+      )}
+      
+      {showAudioSuccess && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+          <span className="text-lg">🎤</span>
+          <span className="font-semibold">Ses kaydı başarıyla gönderildi!</span>
+        </div>
+      )}
+
       {/* Başlık - Responsive */}
       <div className="mb-8 md:mb-12 text-center max-w-4xl">
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font text-gray-900 mb-4 md:mb-8 italic leading-tight">
@@ -371,7 +419,11 @@ export default function Home() {
             className="mt-3 md:mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base"
             onClick={(e) => {
               e.stopPropagation();
-              fileInputRef.current?.click();
+              // Input'u temizle ve tıkla
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+                fileInputRef.current.click();
+              }
             }}
           >
             📁 Dosya Seç
