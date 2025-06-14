@@ -236,7 +236,7 @@
                 // 2. Her dosyayı uploadThing'e yükle
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    const uploadData = presignedData.data ? presignedData.data[i] : presignedData[i];
+                    const uploadData = presignedData.data? presignedData.data[i] : presignedData[i];
                     
                     const progress = (i / files.length) * 100;
                     progressFill.style.width = progress + '%';
@@ -254,7 +254,7 @@
                     formData.append('file', file);
                     
                     // uploadThing S3'e yükle
-                    const uploadUrl = uploadData.presignedUrl ? uploadData.presignedUrl.url : uploadData.url;
+                    const uploadUrl = `https://${uploadData.region}.ingest.uploadthing.com/${uploadData.key}`;
                     const uploadResponse = await fetch(uploadUrl, {
                         method: 'POST',
                         body: formData
