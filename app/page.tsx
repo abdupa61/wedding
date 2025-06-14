@@ -10,7 +10,9 @@ export default function Home() {
       {/* Hoş geldin mesajı */}
       <div className="mb-12 text-center">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          Abdulsamet ❤️ Zehra&apos;nın Düğününe Hoşgeldiniz
+          Abdulsamet      &      Zehra
+          Düğünümüze Hoşgeldiniz
+          30.08.2025
         </h1>
         <p className="text-lg text-gray-600">
           Düğün fotoğraflarınızı yükleyebilirsiniz
@@ -36,7 +38,12 @@ export default function Home() {
           router.push(`/${res[0].key}`);
         }}
         onUploadError={(error: Error) => {
-          alert(`ERROR! ${error.message}`);
+          alert(`HATA! ${error.message}`);
+        }}
+        content={{
+          label: "Dosya seçin veya sürükleyip bırakın",
+          allowedContent: "Resim ve videolar",
+          button: "Dosya Seç"
         }}
       />
       
