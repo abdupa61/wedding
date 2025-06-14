@@ -1,4 +1,3 @@
-
 {
   "name": "wedding-photo-upload",
   "version": "1.0.0",
@@ -9,14 +8,16 @@
     "start": "node api/uploadthing.js"
   },
   "dependencies": {
-    "uploadthing": "^6.13.2",
-    "@uploadthing/shared": "^6.7.6"
+    "uploadthing": "^6.13.2"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/abdupa61/wedding"
-  }
+    "url": "your-github-repo-url"
+  },
+  "keywords": ["uploadthing", "file-upload", "wedding", "photos"],
+  "author": "Your Name",
+  "license": "MIT"
 }
