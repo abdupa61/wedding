@@ -10,7 +10,7 @@ export default function Home() {
       {/* Hoş geldin mesajı */}
       <div className="mb-12 text-center">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          Abdulsamet ❤️ Zehra'nın Düğününe Hoşgeldiniz
+          Abdulsamet ❤️ Zehra&apos;nın Düğününe Hoşgeldiniz
         </h1>
         <p className="text-lg text-gray-600">
           Düğün fotoğraflarınızı yükleyebilirsiniz
