@@ -1,7 +1,7 @@
 {
   "functions": {
-    "api/*.js": {
-      "runtime": "@vercel/node@3.0.7"
+    "api/uploadthing.js": {
+      "runtime": "nodejs20.x"
     }
   },
   "headers": [
