@@ -1,26 +1,11 @@
 {
   "functions": {
     "api/uploadthing.js": {
-      "runtime": "nodejs20.x"
+      "maxDuration": 30
     }
   },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        }
-      ]
-    }
-  ]
+  "env": {
+    "UPLOADTHING_SECRET": "@uploadthing-secret",
+    "UPLOADTHING_APP_ID": "@uploadthing-app-id"
+  }
 }
