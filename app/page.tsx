@@ -119,7 +119,7 @@ export default function Home() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Ses kayıt fonksiyonları (değişiklik yok)
+  // Ses kayıt fonksiyonları
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -289,32 +289,31 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-24">
-      {/* Başlık */}
-      <div className="mb-12 text-center">
-        <h1 className="text-6xl font text-gray-900 mb-8 italic">
+    <main className="flex min-h-screen flex-col items-center px-4 py-8 sm:px-6 md:px-8 lg:px-24">
+      {/* Başlık - Responsive */}
+      <div className="mb-8 md:mb-12 text-center max-w-4xl">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font text-gray-900 mb-4 md:mb-8 italic leading-tight">
           Abdulsamet & Zehra
         </h1>
-        <h1 className="text-3xl font-italic gray-900 mb-4">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-4 leading-relaxed">
           Düğünümüze Hoşgeldiniz
-		  <br />
-          30.08.2025
           <br />
+          30.08.2025
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-sm sm:text-base md:text-lg text-gray-600 px-4">
           Düğün fotoğraflarınızı yükleyebilir ve ses kayıtları yapabilirsiniz
         </p>
       </div>
 
-      {/* Fotoğraf/Video Yükleme - Yeni Tasarım */}
-      <div className="mb-8 w-full max-w-lg">
-        <h2 className="text-2xl font-semibold text-gray-700 mb-4 text-center">
+      {/* Fotoğraf/Video Yükleme - Mobile Responsive */}
+      <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
           📸 Fotoğraf ve Video Yükleme
         </h2>
         
-        {/* Dosya Seçim Alanı */}
+        {/* Dosya Seçim Alanı - Mobile Optimized */}
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 md:p-8 text-center transition-all duration-200 cursor-pointer ${
             isDragging 
               ? "border-blue-500 bg-blue-50" 
               : "border-gray-300 hover:border-gray-400 bg-gray-50"
@@ -324,11 +323,11 @@ export default function Home() {
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <div className="text-6xl mb-4">📤</div>
-          <p className="text-lg font-semibold text-gray-700 mb-2">
+          <div className="text-4xl sm:text-5xl md:text-6xl mb-2 md:mb-4">📤</div>
+          <p className="text-base sm:text-lg font-semibold text-gray-700 mb-1 md:mb-2">
             {isDragging ? "Dosyaları buraya bırakın" : "Dosya seçin veya sürükleyip bırakın"}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-gray-500 mb-3 md:mb-0">
             Resim ve videolar (Maks. 1GB)
           </p>
           
@@ -343,7 +342,7 @@ export default function Home() {
           
           <button
             type="button"
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
+            className="mt-3 md:mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base"
             onClick={(e) => {
               e.stopPropagation();
               fileInputRef.current?.click();
@@ -353,20 +352,20 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Seçilen Dosyalar Listesi */}
+        {/* Seçilen Dosyalar Listesi - Mobile Responsive */}
         {selectedFiles.length > 0 && (
-          <div className="mt-4 space-y-2">
-            <h3 className="font-semibold text-gray-700">Seçilen Dosyalar:</h3>
-            <div className="max-h-40 overflow-y-auto space-y-2">
+          <div className="mt-3 md:mt-4 space-y-2">
+            <h3 className="font-semibold text-gray-700 text-sm sm:text-base">Seçilen Dosyalar:</h3>
+            <div className="max-h-32 sm:max-h-40 overflow-y-auto space-y-2">
               {selectedFiles.map((file, index) => (
                 <div key={index} className="flex items-center justify-between p-2 bg-white border rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700 truncate">{file.name}</p>
                     <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                   </div>
                   <button
                     onClick={() => removeFile(index)}
-                    className="ml-2 text-red-500 hover:text-red-700 font-bold"
+                    className="text-red-500 hover:text-red-700 font-bold text-sm sm:text-base p-1"
                   >
                     ✕
                   </button>
@@ -374,11 +373,11 @@ export default function Home() {
               ))}
             </div>
             
-            {/* Yükle Butonu */}
+            {/* Yükle Butonu - Mobile Responsive */}
             <button
               onClick={uploadFiles}
               disabled={isUploadingFile || uploadThingUploading || selectedFiles.length === 0}
-              className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-2 ${
+              className={`w-full py-2.5 md:py-3 px-3 md:px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
                 isUploadingFile || uploadThingUploading || selectedFiles.length === 0
                   ? "bg-gray-400 text-gray-600 cursor-not-allowed"
                   : "bg-green-600 hover:bg-green-700 text-white"
@@ -387,12 +386,15 @@ export default function Home() {
               {isUploadingFile || uploadThingUploading ? (
                 <>
                   <span className="animate-spin">⏳</span>
-                  Yükleniyor... {uploadProgress > 0 && `%${uploadProgress}`}
+                  <span className="hidden sm:inline">Yükleniyor...</span>
+                  <span className="sm:hidden">Yükleniyor</span>
+                  {uploadProgress > 0 && <span>%{uploadProgress}</span>}
                 </>
               ) : (
                 <>
                   <span>⬆️</span>
-                  {selectedFiles.length} Dosyayı Yükle
+                  <span className="hidden sm:inline">{selectedFiles.length} Dosyayı Yükle</span>
+                  <span className="sm:hidden">{selectedFiles.length} Dosya Yükle</span>
                 </>
               )}
             </button>
@@ -400,42 +402,46 @@ export default function Home() {
         )}
       </div>
 
-      {/* Ses Kayıt Bölümü (değişiklik yok) */}
-      <div className="w-full max-w-lg">
-        <h2 className="text-2xl font-semibold text-gray-700 mb-4 text-center">
+      {/* Ses Kayıt Bölümü - Mobile Responsive */}
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
           🎤 Ses Kaydı
         </h2>
 
-        <div className="bg-white p-6 rounded-lg shadow-lg border">
+        <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border">
           {!audioBlob ? (
             <div className="text-center">
               {!isRecording ? (
                 <button
                   onClick={startRecording}
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto gap-2"
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 md:py-3 px-4 md:px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto gap-2 text-sm sm:text-base"
                 >
-                  <span className="text-xl">🎤</span> Kayıt Başlat
+                  <span className="text-lg md:text-xl">🎤</span> 
+                  <span className="hidden sm:inline">Kayıt Başlat</span>
+                  <span className="sm:hidden">Kayıt</span>
                 </button>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-lg font-mono text-red-600">{formatTime(recordingTime)}</span>
+                <div className="space-y-3 md:space-y-4">
+                  <div className="flex items-center justify-center gap-2 md:gap-3">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-base md:text-lg font-mono text-red-600">{formatTime(recordingTime)}</span>
                   </div>
                   <button
                     onClick={stopRecording}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200"
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 md:py-3 px-4 md:px-6 rounded-full transition-colors duration-200 text-sm sm:text-base"
                   >
-                    ⏹️ Kayıt Durdur
+                    ⏹️ <span className="hidden sm:inline">Kayıt Durdur</span><span className="sm:hidden">Durdur</span>
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               <div className="text-center">
-                <p className="text-gray-600 mb-2">{isConverting ? "🔄 Ses dönüştürülüyor..." : "Kayıt tamamlandı!"}</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-gray-600 mb-1 md:mb-2 text-sm sm:text-base">
+                  {isConverting ? "🔄 Ses dönüştürülüyor..." : "Kayıt tamamlandı!"}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-500">
                   Süre: {formatTime(recordingTime)} • Format: WAV
                 </p>
               </div>
@@ -444,31 +450,37 @@ export default function Home() {
                 Tarayıcınız ses oynatmayı desteklemiyor.
               </audio>
 
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
                 <button
                   onClick={uploadAudio}
                   disabled={isUploading || audioUploadThingUploading || isConverting}
-                  className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors duration-200 flex items-center justify-center gap-2 ${
+                  className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
                     isUploading || audioUploadThingUploading || isConverting ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
                   {(isUploading || audioUploadThingUploading) ? (
                     <>
-                      <span className="animate-spin">⏳</span> Yükleniyor...
+                      <span className="animate-spin">⏳</span> 
+                      <span className="hidden sm:inline">Yükleniyor...</span>
+                      <span className="sm:hidden">Yükleniyor</span>
                     </>
                   ) : isConverting ? (
                     <>
-                      <span className="animate-spin">🔄</span> Dönüştürülüyor...
+                      <span className="animate-spin">🔄</span> 
+                      <span className="hidden sm:inline">Dönüştürülüyor...</span>
+                      <span className="sm:hidden">Dönüştürme</span>
                     </>
                   ) : (
                     <>
-                      <span>⬆️</span> Ses Yükle
+                      <span>⬆️</span> 
+                      <span className="hidden sm:inline">Ses Yükle</span>
+                      <span className="sm:hidden">Yükle</span>
                     </>
                   )}
                 </button>
                 <button
                   onClick={deleteRecording}
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-colors duration-200"
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 sm:px-4 rounded transition-colors duration-200 text-sm sm:text-base"
                 >
                   🗑️ Sil
                 </button>
