@@ -7,7 +7,7 @@ export const ourFileRouter = {
   imageUploader: f({
     image: { maxFileSize: "1GB", maxFileCount: 200 },
     video: { maxFileSize: "1GB", maxFileCount: 50 },
-    audio: { maxFileSize: "100MB", maxFileCount: 100 }, // Ses dosyaları eklendi
+    audio: { maxFileSize: "64MB", maxFileCount: 5 }, // Ses dosyaları eklendi
   })
     .middleware(async () => {
       // Herkes dosya yükleyebilir – auth yok
@@ -18,7 +18,17 @@ export const ourFileRouter = {
       console.log("📁 File URL:", file.url);
       console.log("🎵 File type:", file.type);
       console.log("📏 File size:", file.size);
-      return { uploadedBy: metadata.userId };
+      console.log("📝 File name:", file.name);
+      
+      // Başarılı upload'u onaylamak için bir response döndürüyoruz
+      return { 
+        uploadedBy: metadata.userId,
+        fileUrl: file.url,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        success: true
+      };
     }),
 } satisfies FileRouter;
 
