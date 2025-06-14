@@ -1,43 +1,42 @@
-// api/uploadthing.js - UploadThing Core API
+// api/uploadthing.js
+import { createUploadthing } from "uploadthing/next";
+
+// UploadThing instance'ını oluştur
+const f = createUploadthing();
+
+// Route tanımla
+export const ourFileRouter = {
+  imageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 10 } })
+    .middleware(async ({ req }) => {
+      // Middleware - auth kontrolü vs yapabilirsiniz
+      return { userId: "anonymous" };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log("Upload complete for userId:", metadata.userId);
+      console.log("file url", file.url);
+      return { uploadedBy: metadata.userId };
+    }),
+};
+
+// API handler
 export default async function handler(req, res) {
-  console.log('API called with method:', req.method);
-  
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  
-  const { files } = req.body;
-  
-  if (!files || !Array.isArray(files)) {
-    return res.status(400).json({ error: 'Files array is required' });
-  }
-  
+
   try {
-    const UPLOADTHING_SECRET = process.env.UPLOADTHING_SECRET;
-    const UPLOADTHING_APP_ID = process.env.UPLOADTHING_APP_ID;
+    const { files } = req.body;
     
-    if (!UPLOADTHING_SECRET || !UPLOADTHING_APP_ID) {
-      throw new Error('UploadThing credentials not configured');
+    if (!files || !Array.isArray(files)) {
+      return res.status(400).json({ error: 'Files array is required' });
     }
-    
-    console.log('Requesting presigned URLs...');
-    
-    // 1. Presigned URL'leri al
-    const presignedResponse = await fetch('https://api.uploadthing.com/v6/requestFileUpload', {
+
+    // UploadThing API'sine presigned URL isteği
+    const response = await fetch('https://uploadthing.com/api/uploadFiles', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Uploadthing-Api-Key': UPLOADTHING_SECRET,
-        'X-Uploadthing-Version': '6.13.2'
+        'X-Uploadthing-Api-Key': process.env.UPLOADTHING_SECRET,
       },
       body: JSON.stringify({
         files: files.map(file => ({
@@ -45,32 +44,19 @@ export default async function handler(req, res) {
           size: file.size,
           type: file.type
         })),
-        metadata: {},
-        acl: 'public-read'
+        routeSlug: 'imageUploader'
       })
     });
-    
-    if (!presignedResponse.ok) {
-      const errorText = await presignedResponse.text();
-      console.error('Presigned URL error:', errorText);
-      throw new Error(`Presigned URL error: ${presignedResponse.status} - ${errorText}`);
+
+    if (!response.ok) {
+      throw new Error(`UploadThing API error: ${response.status}`);
     }
-    
-    const presignedData = await presignedResponse.json();
-    console.log('Presigned URLs received:', presignedData);
-    
-    // Frontend'e presigned URL'leri döndür
-    // Frontend bu URL'leri kullanarak doğrudan dosyaları yükleyecek
-    return res.status(200).json({
-      data: presignedData.data || presignedData,
-      success: true
-    });
-    
+
+    const data = await response.json();
+    res.status(200).json(data);
+
   } catch (error) {
-    console.error('Upload error:', error);
-    return res.status(500).json({ 
-      error: 'Upload failed', 
-      message: error.message 
-    });
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
   }
 }
