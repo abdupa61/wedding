@@ -1,7 +1,6 @@
 {
   "functions": {
     "api/uploadthing.js": {
-      "runtime": "nodejs18.x",
       "maxDuration": 30
     }
   }
