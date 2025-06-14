@@ -213,7 +213,7 @@
     </div>
 
     <script>
-        // UploadThing dosya yükleme fonksiyonu
+        // Simplified upload function that works with your backend
         async function uploadFiles(files) {
             const progressBar = document.getElementById('progressBar');
             const progressFill = document.getElementById('progressFill');
@@ -227,58 +227,63 @@
             status.style.display = 'block';
             
             try {
-                const formData = new FormData();
+                const uploadedUrls = [];
                 
-                // Dosyaları FormData'ya ekle
-                Array.from(files).forEach((file, index) => {
-                    formData.append(`file`, file);
-                });
-                
-                // Metadata ekle
-                formData.append('metadata', JSON.stringify({
-                    uploadedBy: 'wedding-guest',
-                    timestamp: new Date().toISOString()
-                }));
-                
-                // UploadThing'e direkt upload
-                const uploadResponse = await fetch('https://api.uploadthing.com/v6/uploadFiles', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Uploadthing-Api-Key': 'YOUR_UPLOADTHING_SECRET' // Bu gerçek uygulamada backend'den gelecek
+                // Upload each file individually
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    // Update progress
+                    const progress = (i / files.length) * 100;
+                    progressFill.style.width = progress + '%';
+                    
+                    // Create FormData for the file
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    try {
+                        // Upload to your API endpoint
+                        const uploadResponse = await fetch('/api/uploadthing', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (uploadResponse.ok) {
+                            const result = await uploadResponse.json();
+                            // Assuming your API returns { url: "..." }
+                            uploadedUrls.push(result.url || `Uploaded: ${file.name}`);
+                        } else {
+                            console.warn(`${file.name} upload failed:`, uploadResponse.status);
+                            uploadedUrls.push(`Upload failed: ${file.name}`);
+                        }
+                    } catch (fileError) {
+                        console.error(`Error uploading ${file.name}:`, fileError);
+                        uploadedUrls.push(`Error: ${file.name}`);
                     }
-                });
-                
-                if (!uploadResponse.ok) {
-                    const errorData = await uploadResponse.text();
-                    console.error('Upload error:', errorData);
-                    throw new Error(`Upload failed: ${uploadResponse.status}`);
                 }
                 
-                const uploadResult = await uploadResponse.json();
-                console.log('Upload successful:', uploadResult);
-                
-                // Progress'i %100 yap
+                // Complete progress
                 progressFill.style.width = '100%';
                 
-                // Başarı mesajı
+                // Show success message
+                const successCount = uploadedUrls.filter(url => !url.includes('failed') && !url.includes('Error')).length;
                 status.className = 'status success';
-                status.textContent = `${files.length} fotoğraf başarıyla yüklendi! 🎉`;
+                status.textContent = `${successCount}/${files.length} fotoğraf yüklendi! 🎉`;
                 
-                // URL'leri göster
-                urlContainer.innerHTML = '';
-                if (uploadResult.data && Array.isArray(uploadResult.data)) {
-                    uploadResult.data.forEach(fileData => {
+                // Display URLs
+                if (uploadedUrls.length > 0) {
+                    urlContainer.innerHTML = '';
+                    uploadedUrls.forEach(url => {
                         const urlDiv = document.createElement('div');
                         urlDiv.className = 'url-item';
-                        urlDiv.textContent = fileData.url;
+                        urlDiv.textContent = url;
                         urlDiv.onclick = () => {
-                            navigator.clipboard.writeText(fileData.url).then(() => {
+                            navigator.clipboard.writeText(url).then(() => {
                                 urlDiv.style.background = '#d4edda';
-                                urlDiv.textContent = 'Kopyalandı! ✅ ' + fileData.url;
+                                urlDiv.textContent = 'Kopyalandı! ✅ ' + url;
                                 setTimeout(() => {
                                     urlDiv.style.background = 'white';
-                                    urlDiv.textContent = fileData.url;
+                                    urlDiv.textContent = url;
                                 }, 2000);
                             }).catch(err => {
                                 console.error('Kopyalama hatası:', err);
@@ -286,7 +291,6 @@
                         };
                         urlContainer.appendChild(urlDiv);
                     });
-                    
                     urlList.style.display = 'block';
                 }
                 
@@ -302,7 +306,7 @@
             }
         }
 
-        // Dosya önizleme
+        // File preview function
         function createPreview(file) {
             const previewContainer = document.getElementById('previewContainer');
             const previewItem = document.createElement('div');
@@ -328,7 +332,7 @@
             previewContainer.appendChild(previewItem);
         }
 
-        // Dosya validasyonu
+        // File validation
         function validateFiles(files) {
             const maxSize = 8 * 1024 * 1024; // 8MB
             const maxCount = 10;
@@ -369,7 +373,7 @@
             }
         });
 
-        // Sürükle bırak
+        // Drag and drop
         const uploadArea = document.getElementById('uploadArea');
         
         uploadArea.addEventListener('dragover', function(e) {
