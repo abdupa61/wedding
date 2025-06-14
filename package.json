@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'Build complete'",
+    "build": "mkdir -p public && echo 'Build complete'",
     "start": "vercel dev"
   },
   "dependencies": {
-    "uploadthing": "^7.7.2"
+    "uploadthing": "^6.0.0"
   },
   "devDependencies": {
     "vercel": "^32.0.0"
