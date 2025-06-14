@@ -1,15 +1,22 @@
+
 {
-  "name": "uploadthing-photo-uploader",
+  "name": "wedding-photo-upload",
   "version": "1.0.0",
-  "description": "Photo uploader with uploadThing integration",
-  "main": "index.html",
+  "description": "Wedding photo upload app with UploadThing",
+  "main": "index.js",
   "scripts": {
-    "dev": "vercel dev",
     "build": "echo 'No build step required'",
-    "deploy": "vercel --prod"
+    "start": "node api/uploadthing.js"
   },
-  "dependencies": {},
-  "devDependencies": {
-    "@vercel/node": "^3.0.0"
+  "dependencies": {
+    "uploadthing": "^6.13.2",
+    "@uploadthing/shared": "^6.7.6"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abdupa61/wedding"
   }
 }
