@@ -14,6 +14,10 @@ export default function Home() {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
+  // Ses kaydı için isim state'i eklendi
+  const [recordingName, setRecordingName] = useState("");
+  const [showNameInput, setShowNameInput] = useState(false);
+  
   // Dosya seçimi için state'ler
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -119,6 +123,17 @@ export default function Home() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // İsim validasyonu - en az 3 karakter ve boşluk içermeli (ad soyad için)
+  const isValidName = (name: string) => {
+    const trimmedName = name.trim();
+    return trimmedName.length >= 3 && trimmedName.includes(' ');
+  };
+
+  // Kayıt başlatma - buton her zaman aktif
+  const handleStartRecording = () => {
+    startRecording();
+  };
+
   // Ses kayıt fonksiyonları
   const startRecording = async () => {
     try {
@@ -157,6 +172,7 @@ export default function Home() {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      setShowNameInput(false);
 
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
@@ -248,8 +264,18 @@ export default function Home() {
       return;
     }
 
+    // İsim kontrolü sadece yükleme sırasında yapılacak
+    if (!isValidName(recordingName)) {
+      alert("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)");
+      return;
+    }
+
     try {
-      const fileName = `ses-kaydi-${Date.now()}.wav`;
+      // Dosya adını isim ve tarih ile oluştur
+      const sanitizedName = recordingName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
+      const timestamp = new Date().toLocaleString('tr-TR').replace(/[/:]/g, '-').replace(/\s/g, '_');
+      const fileName = `ses-kaydi-${sanitizedName}-${timestamp}.wav`;
+      
       const audioFile = new File([blobToUpload], fileName, {
         type: "audio/wav",
       });
@@ -409,11 +435,38 @@ export default function Home() {
         </h2>
 
         <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border">
+          {/* İsim Girişi - Her zaman göster */}
+          <div className="mb-4 space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              İsminizi girin (Adınız ve Soyadınız):
+            </label>
+            <input
+              type="text"
+              value={recordingName}
+              onChange={(e) => setRecordingName(e.target.value)}
+              placeholder="Örn: Ahmet Yılmaz"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+              maxLength={50}
+              autoComplete="off"
+              spellCheck="false"
+            />
+            {recordingName.trim() && !isValidName(recordingName) && (
+              <p className="text-xs text-orange-600">
+                ⚠️ Lütfen adınızı ve soyadınızı tam olarak girin
+              </p>
+            )}
+            {isValidName(recordingName) && (
+              <p className="text-xs text-green-600">
+                ✅ İsim bilgisi uygun
+              </p>
+            )}
+          </div>
+
           {!audioBlob ? (
             <div className="text-center">
               {!isRecording ? (
                 <button
-                  onClick={startRecording}
+                  onClick={handleStartRecording}
                   className="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 md:py-3 px-4 md:px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto gap-2 text-sm sm:text-base"
                 >
                   <span className="text-lg md:text-xl">🎤</span> 
@@ -426,6 +479,7 @@ export default function Home() {
                     <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-red-500 rounded-full animate-pulse"></div>
                     <span className="text-base md:text-lg font-mono text-red-600">{formatTime(recordingTime)}</span>
                   </div>
+                  <p className="text-sm text-gray-600">🎙️ Kayıt devam ediyor...</p>
                   <button
                     onClick={stopRecording}
                     className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 md:py-3 px-4 md:px-6 rounded-full transition-colors duration-200 text-sm sm:text-base"
@@ -443,6 +497,7 @@ export default function Home() {
                 </p>
                 <p className="text-xs sm:text-sm text-gray-500">
                   Süre: {formatTime(recordingTime)} • Format: WAV
+                  {recordingName.trim() && ` • Kayıt sahibi: ${recordingName}`}
                 </p>
               </div>
 
@@ -453,9 +508,9 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
                 <button
                   onClick={uploadAudio}
-                  disabled={isUploading || audioUploadThingUploading || isConverting}
+                  disabled={isUploading || audioUploadThingUploading || isConverting || !isValidName(recordingName)}
                   className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
-                    isUploading || audioUploadThingUploading || isConverting ? "opacity-50 cursor-not-allowed" : ""
+                    isUploading || audioUploadThingUploading || isConverting || !isValidName(recordingName) ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
                   {(isUploading || audioUploadThingUploading) ? (
