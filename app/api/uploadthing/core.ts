@@ -1,24 +1,18 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { UploadThingError } from "uploadthing/server";
 
 const f = createUploadthing();
 
-const auth = (req: Request) => ({ id: "fakeId" }); // Fake auth function
-
-// FileRouter for your app, can contain multiple FileRoutes
+// FileRouter for your app, kimlik doğrulama YOK
 export const ourFileRouter = {
-  imageUploader: f({ 
+  imageUploader: f({
     image: { maxFileSize: "1GB", maxFileCount: 200 },
-    video: { maxFileSize: "1GB", maxFileCount: 50 }
+    video: { maxFileSize: "1GB", maxFileCount: 50 },
   })
-    .middleware(async ({ req }) => {
-      const user = await auth(req);
-      if (!user) throw new UploadThingError("Unauthorized");
-      return { userId: user.id };
+    .middleware(async () => {
+      // Herkes dosya yükleyebilir – auth yok
+      return { userId: "anonymous" };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Upload complete for userId:", metadata.userId);
-      console.log("file url", file.url);
       return { uploadedBy: metadata.userId };
     }),
 } satisfies FileRouter;
