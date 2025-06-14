@@ -1,25 +1,32 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "next.config.js",
-      "use": "@vercel/next"
-    }
-  ],
   "functions": {
     "api/uploadthing.js": {
-      "maxDuration": 30
+      "runtime": "nodejs18.x"
     }
   },
-  "env": {
-    "UPLOADTHING_SECRET": "@uploadthing-secret",
-    "UPLOADTHING_APP_ID": "@uploadthing-app-id"
-  },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/"
+      "source": "/api/uploadthing",
+      "destination": "/api/uploadthing.js"
     }
   ],
-  "outputDirectory": "public"
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ]
 }
