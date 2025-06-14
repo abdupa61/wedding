@@ -1,4 +1,4 @@
-// api/uploadthing.js - Vercel serverless function
+// api/uploadthing.js - UploadThing Core API
 export default async function handler(req, res) {
   console.log('API called with method:', req.method);
   
@@ -7,51 +7,37 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  // OPTIONS request için
   if (req.method === 'OPTIONS') {
-    console.log('OPTIONS request handled');
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
   
-  // Sadece POST method kabul et
   if (req.method !== 'POST') {
-    console.log('Method not allowed:', req.method);
-    return res.status(405).json({ error: 'Method not allowed', method: req.method });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
-  
-  console.log('POST request body:', req.body);
   
   const { files } = req.body;
   
   if (!files || !Array.isArray(files)) {
-    console.log('Invalid files data:', files);
     return res.status(400).json({ error: 'Files array is required' });
   }
   
   try {
-    // Environment variables kontrol
     const UPLOADTHING_SECRET = process.env.UPLOADTHING_SECRET;
     const UPLOADTHING_APP_ID = process.env.UPLOADTHING_APP_ID;
     
-    console.log('Environment check:', {
-      hasSecret: !!UPLOADTHING_SECRET,
-      hasAppId: !!UPLOADTHING_APP_ID
-    });
-    
     if (!UPLOADTHING_SECRET || !UPLOADTHING_APP_ID) {
-      throw new Error('uploadThing credentials not configured');
+      throw new Error('UploadThing credentials not configured');
     }
     
-    console.log('Making request to uploadThing API...');
+    console.log('Requesting presigned URLs...');
     
-    // uploadThing API'sine presigned URL isteği
-    const response = await fetch('https://api.uploadthing.com/v6/requestFileUpload', {
+    // 1. Presigned URL'leri al
+    const presignedResponse = await fetch('https://api.uploadthing.com/v6/requestFileUpload', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Uploadthing-Api-Key': UPLOADTHING_SECRET,
-        'X-Uploadthing-Version': '6.0.2'
+        'X-Uploadthing-Version': '6.13.2'
       },
       body: JSON.stringify({
         files: files.map(file => ({
@@ -60,28 +46,29 @@ export default async function handler(req, res) {
           type: file.type
         })),
         metadata: {},
-        callbackUrl: null,
-        callbackSlug: null
+        acl: 'public-read'
       })
     });
     
-    console.log('uploadThing response status:', response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('uploadThing API error:', errorText);
-      throw new Error(`uploadThing API error: ${response.status} - ${errorText}`);
+    if (!presignedResponse.ok) {
+      const errorText = await presignedResponse.text();
+      console.error('Presigned URL error:', errorText);
+      throw new Error(`Presigned URL error: ${presignedResponse.status} - ${errorText}`);
     }
     
-    const data = await response.json();
-    console.log('uploadThing response data:', data);
+    const presignedData = await presignedResponse.json();
+    console.log('Presigned URLs received:', presignedData);
     
-    // Presigned URL'leri frontend'e döndür
-    res.status(200).json(data);
+    // Frontend'e presigned URL'leri döndür
+    // Frontend bu URL'leri kullanarak doğrudan dosyaları yükleyecek
+    return res.status(200).json({
+      data: presignedData.data || presignedData,
+      success: true
+    });
     
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Upload failed', 
       message: error.message 
     });
