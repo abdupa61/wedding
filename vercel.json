@@ -1,15 +1,9 @@
 {
   "functions": {
-    "api/uploadthing.js": {
-      "runtime": "nodejs18.x"
+    "api/*.js": {
+      "runtime": "@vercel/node@3.0.7"
     }
   },
-  "rewrites": [
-    {
-      "source": "/api/uploadthing",
-      "destination": "/api/uploadthing.js"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
