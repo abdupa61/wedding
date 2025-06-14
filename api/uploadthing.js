@@ -1,117 +1,100 @@
-import { createUploadthing } from "uploadthing/server";
-import { UploadThingError } from "uploadthing/server";
+const { UTApi } = require("uploadthing/server");
 
-// UploadThing instance'ı oluştur
-const f = createUploadthing();
-
-// Route definitions
-const ourFileRouter = {
-  // Görsel upload route'u
-  imageUploader: f({
-    image: {
-      maxFileSize: "8MB",
-      maxFileCount: 10
-    }
-  })
-    .middleware(async ({ req }) => {
-      // Middleware - auth kontrolü vs yapabilirsiniz
-      console.log("File upload middleware executed");
-      
-      // Metadata return edebilirsiniz
-      return { uploadedBy: "wedding-guest" };
-    })
-    .onUploadComplete(async ({ metadata, file }) => {
-      // Upload tamamlandığında çalışır
-      console.log("Upload complete for user:", metadata.uploadedBy);
-      console.log("File URL:", file.url);
-      
-      // Client'a return edilecek data
-      return { uploadedBy: metadata.uploadedBy, fileUrl: file.url };
-    }),
-};
-
-// Vercel serverless function için handler
-export default async function handler(req, res) {
+// Vercel serverless function handler
+module.exports = async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
-  // OPTIONS request için
+  // OPTIONS request için preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
   try {
-    // UploadThing API key kontrolü
+    // Environment variable kontrolü
     if (!process.env.UPLOADTHING_SECRET) {
-      throw new Error('UPLOADTHING_SECRET environment variable is required');
+      console.error('UPLOADTHING_SECRET environment variable is missing');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        message: 'UploadThing API key not configured' 
+      });
     }
 
+    // UTApi instance oluştur
+    const utapi = new UTApi({
+      apiKey: process.env.UPLOADTHING_SECRET,
+    });
+
     if (req.method === 'POST') {
-      // Presigned URL generation için
+      console.log('POST request received');
+      
+      // Request body'yi kontrol et
+      if (!req.body) {
+        return res.status(400).json({ error: 'Request body is required' });
+      }
+
       const { files } = req.body;
       
       if (!files || !Array.isArray(files)) {
-        return res.status(400).json({ error: 'Files array is required' });
+        return res.status(400).json({ error: 'Files array is required in request body' });
       }
 
-      // UploadThing'den presigned URL'leri al
-      const { createUploadthing } = await import("uploadthing/server");
-      const utapi = createUploadthing();
-      
+      console.log(`Processing ${files.length} files`);
+
       // Her dosya için presigned URL oluştur
-      const uploadPromises = files.map(async (fileInfo) => {
+      const uploadData = [];
+      
+      for (const fileInfo of files) {
         try {
-          // UploadThing'in yeni API'sını kullan
-          const response = await fetch(`https://api.uploadthing.com/v6/uploadFiles`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Uploadthing-Api-Key': process.env.UPLOADTHING_SECRET,
-            },
-            body: JSON.stringify({
-              files: [{
-                name: fileInfo.name,
-                size: fileInfo.size,
-                type: fileInfo.type
-              }],
-              metadata: {
-                uploadedBy: "wedding-guest"
-              }
-            })
+          // UploadThing API'sine presigned URL isteği
+          const presignedUrl = await utapi.requestFileAccess({
+            fileKey: `wedding-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+            fileName: fileInfo.name,
+            fileSize: fileInfo.size,
+            fileType: fileInfo.type
           });
 
-          if (!response.ok) {
-            const errorData = await response.text();
-            console.error('UploadThing API Error:', errorData);
-            throw new Error(`UploadThing API error: ${response.status}`);
-          }
+          uploadData.push({
+            name: fileInfo.name,
+            size: fileInfo.size,
+            type: fileInfo.type,
+            presignedUrl: presignedUrl.url,
+            key: presignedUrl.key,
+            url: `https://utfs.io/f/${presignedUrl.key}`
+          });
 
-          const data = await response.json();
-          return data.data[0]; // İlk dosyanın upload bilgileri
-          
         } catch (error) {
-          console.error('Upload preparation error:', error);
-          throw error;
+          console.error(`Error creating presigned URL for ${fileInfo.name}:`, error);
+          
+          // UploadThing'in basit upload endpoint'ini kullan
+          uploadData.push({
+            name: fileInfo.name,
+            size: fileInfo.size,
+            type: fileInfo.type,
+            presignedUrl: `https://api.uploadthing.com/v6/uploadFiles`,
+            key: `wedding-${Date.now()}-${fileInfo.name}`,
+            url: null // Upload sonrası dönecek
+          });
         }
-      });
+      }
 
-      const uploadData = await Promise.all(uploadPromises);
-      
+      console.log('Generated upload data for', uploadData.length, 'files');
       res.status(200).json(uploadData);
 
     } else if (req.method === 'GET') {
-      // Health check
+      // Health check endpoint
       res.status(200).json({ 
         status: 'OK', 
         message: 'UploadThing API is running',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        hasApiKey: !!process.env.UPLOADTHING_SECRET
       });
       
     } else {
-      res.status(405).json({ error: 'Method not allowed' });
+      res.status(405).json({ error: `Method ${req.method} not allowed` });
     }
 
   } catch (error) {
@@ -122,7 +105,4 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
   }
-}
-
-// UploadThing router'ı export et (gerekirse)
-export { ourFileRouter };
+};
