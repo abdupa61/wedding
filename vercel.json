@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/uploadthing.js": {
-      "maxDuration": 30
-    }
-  }
-}
