@@ -4,10 +4,6 @@
       "maxDuration": 30
     }
   },
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/index.html"
-    }
-  ]
+  "buildCommand": "npm run build",
+  "outputDirectory": "public"
 }
