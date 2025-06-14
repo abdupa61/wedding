@@ -2,14 +2,9 @@
   "name": "uploadthing-vercel-app",
   "version": "1.0.0",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "mkdir -p public && echo 'Build complete'",
-    "start": "vercel dev"
+    "build": "echo 'No build needed'"
   },
   "dependencies": {
     "uploadthing": "^6.0.0"
-  },
-  "devDependencies": {
-    "vercel": "^32.0.0"
   }
 }
