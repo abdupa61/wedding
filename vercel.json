@@ -1,12 +1,1 @@
-{
-  "functions": {
-    "api/uploadthing.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 30
-    }
-  },
-  "env": {
-    "UPLOADTHING_SECRET": "@uploadthing-secret",
-    "UPLOADTHING_APP_ID": "@uploadthing-app-id"
-  }
-}
+
