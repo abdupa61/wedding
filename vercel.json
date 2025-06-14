@@ -1,0 +1,14 @@
+{
+  "name": "uploadthing-photo-uploader",
+  "version": "1.0.0",
+  "description": "Photo uploader with uploadThing integration",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@vercel/node": "^3.0.0"
+  }
+}
