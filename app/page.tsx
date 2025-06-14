@@ -139,14 +139,9 @@ export default function Home() {
 
   const uploadFiles = async () => {
     if (selectedFiles.length === 0) return;
-  
+    
     try {
-      // Dosyaları 3'erli gruplara böl (paralel yükleme için)
-      const batchSize = 3;
-      for (let i = 0; i < selectedFiles.length; i += batchSize) {
-        const batch = selectedFiles.slice(i, i + batchSize);
-        await startUpload(batch);
-      }
+      await startUpload(selectedFiles);
     } catch (error: any) {
       console.error("❌ Dosya yükleme hatası:", error);
       alert(`Dosya yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`);
