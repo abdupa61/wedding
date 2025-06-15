@@ -2,6 +2,7 @@
 import { useUploadThing } from "@/src/utils/uploadthing";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useMemo } from "react";
+import Image from 'next/image';
 
 export default function Home() {
   const router = useRouter();
@@ -54,7 +55,6 @@ export default function Home() {
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res: any[]) => {
       console.log("✅ Dosya yükleme tamamlandı:", res);
-      alert(`Yükleme tamamlandı! Yüklenen dosya sayısı: ${res.length}`);
       
       setSelectedFiles([]);
       setIsUploadingFile(false);
@@ -74,14 +74,11 @@ export default function Home() {
     },
     onUploadBegin: (name: string) => {
       console.log("📤 Dosya yükleme başladı:", name);
-      alert(`Yükleme başladı: ${name}`);
       
       setIsUploadingFile(true);
     },
     onUploadProgress: (progress: number) => {
       setUploadProgress(progress);
-      // İstersen buraya da alert koyabilirsin, ama progress çok sık gelir, spam olur.
-      // alert(`Yükleme ilerlemesi: %${Math.round(progress * 100)}`);
     },
   });
 
@@ -112,9 +109,35 @@ export default function Home() {
     const files = event.target.files;
     if (files) {
       const fileArray = Array.from(files);
-      setSelectedFiles(prev => [...prev, ...fileArray]);
+      
+      // Dosya türü kontrolü ekle
+      const validFiles = fileArray.filter(file => {
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/') || 
+                       file.name.toLowerCase().endsWith('.mp4') ||
+                       file.name.toLowerCase().endsWith('.mov') ||
+                       file.name.toLowerCase().endsWith('.avi') ||
+                       file.name.toLowerCase().endsWith('.quicktime');
+        
+        if (!isImage && !isVideo) {
+          console.warn(`❌ Desteklenmeyen dosya türü: ${file.name} (${file.type})`);
+          alert(`"${file.name}" dosyası desteklenmeyen bir format. Sadece resim ve video dosyaları yükleyebilirsiniz.`);
+          return false;
+        }
+        
+        // Dosya boyutu kontrolü (1GB = 1024*1024*1024 bytes)
+        if (file.size > 1024 * 1024 * 1024) {
+          alert(`"${file.name}" dosyası çok büyük. Maksimum 1GB olmalı.`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      setSelectedFiles(prev => [...prev, ...validFiles]);
     }
-    // Input'u temizle ki aynı dosya tekrar seçilebilsin
+    
+    // Input'u temizle
     if (event.target) {
       event.target.value = '';
     }
@@ -137,7 +160,30 @@ export default function Home() {
     const files = event.dataTransfer.files;
     if (files) {
       const fileArray = Array.from(files);
-      setSelectedFiles(prev => [...prev, ...fileArray]);
+      
+      // Aynı validasyon kontrolü
+      const validFiles = fileArray.filter(file => {
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/') || 
+                       file.name.toLowerCase().endsWith('.mp4') ||
+                       file.name.toLowerCase().endsWith('.mov') ||
+                       file.name.toLowerCase().endsWith('.avi') ||
+                       file.name.toLowerCase().endsWith('.quicktime');
+        
+        if (!isImage && !isVideo) {
+          console.warn(`❌ Desteklenmeyen dosya türü: ${file.name} (${file.type})`);
+          return false;
+        }
+        
+        if (file.size > 1024 * 1024 * 1024) {
+          alert(`"${file.name}" dosyası çok büyük. Maksimum 1GB olmalı.`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      setSelectedFiles(prev => [...prev, ...validFiles]);
     }
   };
 
@@ -148,11 +194,29 @@ export default function Home() {
   const uploadFiles = async () => {
     if (selectedFiles.length === 0) return;
     
+    console.log("📤 Yüklenecek dosyalar:", selectedFiles.map(f => ({
+      name: f.name,
+      type: f.type,
+      size: f.size
+    })));
+    
     try {
       await startUpload(selectedFiles);
     } catch (error: any) {
       console.error("❌ Dosya yükleme hatası:", error);
-      alert(`Dosya yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`);
+      
+      // Daha spesifik hata mesajları
+      let errorMessage = "Dosya yükleme sırasında hata oluştu.";
+      
+      if (error.message?.includes("Invalid file type")) {
+        errorMessage = "Dosya türü desteklenmiyor. Sadece resim ve video dosyaları yükleyebilirsiniz.";
+      } else if (error.message?.includes("File too large")) {
+        errorMessage = "Dosya çok büyük. Maksimum 1GB boyutunda dosya yükleyebilirsiniz.";
+      } else if (error.message?.includes("Network")) {
+        errorMessage = "İnternet bağlantısı sorunu. Lütfen tekrar deneyin.";
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -439,30 +503,32 @@ export default function Home() {
         </div>
 
         {/* Seçilen Dosyalar Listesi - Mobile Responsive */}
-        {selectedFiles.length > 0 && (
-          <div className="mt-3 md:mt-4 space-y-2">
-            <h3 className="font-semibold text-gray-700 text-sm sm:text-base">Seçilen Dosyalar:</h3>
-            <div className="max-h-32 sm:max-h-80 overflow-y-auto grid grid-cols-3 gap-2">
-              {selectedFiles.map((file, index) => (
-                <div key={index} className="bg-white border rounded-lg p-2 space-y-2">
-                  {file.type.startsWith('image/') && (
-                    <div className="relative">
-                      <img 
-                        src={URL.createObjectURL(file)} 
-                        alt={file.name}
-                        className="w-full h-20 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0 pr-2">
-                      <p className="text-xs sm:text-sm font-medium text-gray-700 truncate">{file.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                    </div>
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="text-red-500 hover:text-red-700 font-bold text-sm sm:text-base p-1"
-                    >
+          {selectedFiles.length > 0 && (
+            <div className="mt-3 md:mt-4 space-y-2">
+              <h3 className="font-semibold text-gray-700 text-sm sm:text-base">Seçilen Dosyalar:</h3>
+              <div className="max-h-32 sm:max-h-80 overflow-y-auto grid grid-cols-3 gap-2">
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="bg-white border rounded-lg p-2 space-y-2">
+                    {file.type.startsWith('image/') && (
+                      <div className="relative w-full h-20">
+                        <Image 
+                          src={URL.createObjectURL(file)} 
+                          alt={file.name}
+                          fill
+                          className="object-cover rounded-lg"
+                          sizes="(max-width: 768px) 33vw, 25vw"
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <p className="text-xs sm:text-sm font-medium text-gray-700 truncate">{file.name}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                      </div>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="text-red-500 hover:text-red-700 font-bold text-sm sm:text-base p-1"
+                      >
                       ✕
                     </button>
                   </div>
