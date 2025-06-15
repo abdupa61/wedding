@@ -1,16 +1,35 @@
-import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { createUploadthing, type FileRouter } from "uploadthing/server";
 
 const f = createUploadthing();
 
-// FileRouter for your app, kimlik doğrulama YOK
 export const ourFileRouter = {
   imageUploader: f({
-    image: { maxFileSize: "1GB", maxFileCount: 200 },
-    video: { maxFileSize: "1GB", maxFileCount: 50 },
-    audio: { maxFileSize: "64MB", maxFileCount: 5 }, // Ses dosyaları eklendi
+    image: { 
+      maxFileSize: "1GB", 
+      maxFileCount: 200,
+      // Tüm image formatlarını kabul et
+      contentDisposition: "inline"
+    },
+    video: { 
+      maxFileSize: "1GB", 
+      maxFileCount: 50,
+      // Video formatlarını genişlet
+      contentDisposition: "inline"
+    },
+    audio: { 
+      maxFileSize: "64MB", 
+      maxFileCount: 100,
+      contentDisposition: "inline"
+    },
+    // Blob formatını da ekle (mobil uyumluluk için)
+    blob: {
+      maxFileSize: "1GB",
+      maxFileCount: 100
+    }
   })
-    .middleware(async () => {
-      // Herkes dosya yükleyebilir – auth yok
+    .middleware(async ({ req }) => {
+      // Debug için request bilgilerini logla - .get() method kullan
+      console.log("📱 Upload request from:", req.headers.get("user-agent"));
       return { userId: "anonymous" };
     })
     .onUploadComplete(async ({ metadata, file }) => {
@@ -20,7 +39,6 @@ export const ourFileRouter = {
       console.log("📏 File size:", file.size);
       console.log("📝 File name:", file.name);
       
-      // Başarılı upload'u onaylamak için bir response döndürüyoruz
       return { 
         uploadedBy: metadata.userId,
         fileUrl: file.url,
