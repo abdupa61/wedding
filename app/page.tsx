@@ -410,7 +410,7 @@ export default function Home() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*,video/*"
+            accept="image/*,video/*,.heic,.heif,.mov,.mp4,.jpeg,.jpg,.png,.gif,.webp,.avif"
             onChange={handleFileSelect}
             className="hidden"
           />
