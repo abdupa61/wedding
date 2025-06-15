@@ -54,29 +54,37 @@ export default function Home() {
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res: any[]) => {
       console.log("✅ Dosya yükleme tamamlandı:", res);
+      alert(`Yükleme tamamlandı! Yüklenen dosya sayısı: ${res.length}`);
+      
       setSelectedFiles([]);
       setIsUploadingFile(false);
       setUploadProgress(0);
-      setShowFileSuccess(true); // Başarı mesajını göster
-      // File input'u da temizle
+      setShowFileSuccess(true);
+  
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     },
     onUploadError: (error: Error) => {
       console.error("❌ Dosya yükleme hatası:", error);
-      alert(`Yükleme hatası: ${error.message}`);
+      alert(`Yükleme hatası: ${error.message}\nDetay: ${JSON.stringify(error, null, 2)}`);
+      
       setIsUploadingFile(false);
       setUploadProgress(0);
     },
     onUploadBegin: (name: string) => {
       console.log("📤 Dosya yükleme başladı:", name);
+      alert(`Yükleme başladı: ${name}`);
+      
       setIsUploadingFile(true);
     },
     onUploadProgress: (progress: number) => {
       setUploadProgress(progress);
+      // İstersen buraya da alert koyabilirsin, ama progress çok sık gelir, spam olur.
+      // alert(`Yükleme ilerlemesi: %${Math.round(progress * 100)}`);
     },
   });
+
 
   // Ses yükleme için ayrı hook
   const { startUpload: startAudioUpload, isUploading: audioUploadThingUploading } = useUploadThing("imageUploader", {
