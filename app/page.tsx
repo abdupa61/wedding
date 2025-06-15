@@ -366,8 +366,8 @@ export default function Home() {
 
       {/* Başlık - Responsive */}
       <div className="mb-8 md:mb-12 text-center max-w-4xl">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font text-gray-900 mb-4 md:mb-8 italic leading-tight">
-          Abdulsamet & Zehra Nurcan
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font text-gray-900 mb-4 md:mb-8 italic leading-tight">
+          Abdulsamet & Zehra
         </h1>
         <h1 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-4 leading-relaxed">
           Düğünümüze Hoşgeldiniz
@@ -409,7 +409,7 @@ export default function Home() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*,video/*"
+            accept="image/*,video/mp4,video/mov,video/avi,video/quicktime"
             onChange={handleFileSelect}
             className="hidden"
           />
