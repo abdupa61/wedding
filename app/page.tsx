@@ -55,33 +55,29 @@ export default function Home() {
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res: any[]) => {
       console.log("✅ Dosya yükleme tamamlandı:", res);
-      
       setSelectedFiles([]);
       setIsUploadingFile(false);
       setUploadProgress(0);
-      setShowFileSuccess(true);
-  
+      setShowFileSuccess(true); // Başarı mesajını göster
+      // File input'u da temizle
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     },
     onUploadError: (error: Error) => {
       console.error("❌ Dosya yükleme hatası:", error);
-      alert(`Yükleme hatası: ${error.message}\nDetay: ${JSON.stringify(error, null, 2)}`);
-      
+      alert(`Yükleme hatası: ${error.message}`);
       setIsUploadingFile(false);
       setUploadProgress(0);
     },
     onUploadBegin: (name: string) => {
       console.log("📤 Dosya yükleme başladı:", name);
-      
       setIsUploadingFile(true);
     },
     onUploadProgress: (progress: number) => {
       setUploadProgress(progress);
     },
   });
-
 
   // Ses yükleme için ayrı hook
   const { startUpload: startAudioUpload, isUploading: audioUploadThingUploading } = useUploadThing("imageUploader", {
@@ -109,35 +105,9 @@ export default function Home() {
     const files = event.target.files;
     if (files) {
       const fileArray = Array.from(files);
-      
-      // Dosya türü kontrolü ekle
-      const validFiles = fileArray.filter(file => {
-        const isImage = file.type.startsWith('image/');
-        const isVideo = file.type.startsWith('video/') || 
-                       file.name.toLowerCase().endsWith('.mp4') ||
-                       file.name.toLowerCase().endsWith('.mov') ||
-                       file.name.toLowerCase().endsWith('.avi') ||
-                       file.name.toLowerCase().endsWith('.quicktime');
-        
-        if (!isImage && !isVideo) {
-          console.warn(`❌ Desteklenmeyen dosya türü: ${file.name} (${file.type})`);
-          alert(`"${file.name}" dosyası desteklenmeyen bir format. Sadece resim ve video dosyaları yükleyebilirsiniz.`);
-          return false;
-        }
-        
-        // Dosya boyutu kontrolü (1GB = 1024*1024*1024 bytes)
-        if (file.size > 1024 * 1024 * 1024) {
-          alert(`"${file.name}" dosyası çok büyük. Maksimum 1GB olmalı.`);
-          return false;
-        }
-        
-        return true;
-      });
-      
-      setSelectedFiles(prev => [...prev, ...validFiles]);
+      setSelectedFiles(prev => [...prev, ...fileArray]);
     }
-    
-    // Input'u temizle
+    // Input'u temizle ki aynı dosya tekrar seçilebilsin
     if (event.target) {
       event.target.value = '';
     }
@@ -160,30 +130,7 @@ export default function Home() {
     const files = event.dataTransfer.files;
     if (files) {
       const fileArray = Array.from(files);
-      
-      // Aynı validasyon kontrolü
-      const validFiles = fileArray.filter(file => {
-        const isImage = file.type.startsWith('image/');
-        const isVideo = file.type.startsWith('video/') || 
-                       file.name.toLowerCase().endsWith('.mp4') ||
-                       file.name.toLowerCase().endsWith('.mov') ||
-                       file.name.toLowerCase().endsWith('.avi') ||
-                       file.name.toLowerCase().endsWith('.quicktime');
-        
-        if (!isImage && !isVideo) {
-          console.warn(`❌ Desteklenmeyen dosya türü: ${file.name} (${file.type})`);
-          return false;
-        }
-        
-        if (file.size > 1024 * 1024 * 1024) {
-          alert(`"${file.name}" dosyası çok büyük. Maksimum 1GB olmalı.`);
-          return false;
-        }
-        
-        return true;
-      });
-      
-      setSelectedFiles(prev => [...prev, ...validFiles]);
+      setSelectedFiles(prev => [...prev, ...fileArray]);
     }
   };
 
@@ -194,29 +141,11 @@ export default function Home() {
   const uploadFiles = async () => {
     if (selectedFiles.length === 0) return;
     
-    console.log("📤 Yüklenecek dosyalar:", selectedFiles.map(f => ({
-      name: f.name,
-      type: f.type,
-      size: f.size
-    })));
-    
     try {
       await startUpload(selectedFiles);
     } catch (error: any) {
       console.error("❌ Dosya yükleme hatası:", error);
-      
-      // Daha spesifik hata mesajları
-      let errorMessage = "Dosya yükleme sırasında hata oluştu.";
-      
-      if (error.message?.includes("Invalid file type")) {
-        errorMessage = "Dosya türü desteklenmiyor. Sadece resim ve video dosyaları yükleyebilirsiniz.";
-      } else if (error.message?.includes("File too large")) {
-        errorMessage = "Dosya çok büyük. Maksimum 1GB boyutunda dosya yükleyebilirsiniz.";
-      } else if (error.message?.includes("Network")) {
-        errorMessage = "İnternet bağlantısı sorunu. Lütfen tekrar deneyin.";
-      }
-      
-      alert(errorMessage);
+      alert(`Dosya yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`);
     }
   };
 
@@ -481,7 +410,7 @@ export default function Home() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*,video/mp4,video/mov,video/avi,video/quicktime"
+            accept="image/*,video/*"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -529,7 +458,7 @@ export default function Home() {
                         onClick={() => removeFile(index)}
                         className="text-red-500 hover:text-red-700 font-bold text-sm sm:text-base p-1"
                       >
-                      ✕
+                        ✕
                     </button>
                   </div>
                 </div>
