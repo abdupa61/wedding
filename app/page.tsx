@@ -14,6 +14,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showLocationSection, setShowLocationSection] = useState(false);
   
   // Başarı mesajları için state'ler
   const [showFileSuccess, setShowFileSuccess] = useState(false);
@@ -50,6 +51,15 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [showAudioSuccess]);
+
+  const weddingLocation = {
+    name: "Mercan Korupark",
+    address: "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon",
+    coordinates: {
+      lat: 36.8127, // Mersin koordinatları örnek
+      lng: 34.6415
+    }
+  };
 
   // Dosya yükleme için hook
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
@@ -322,6 +332,13 @@ export default function Home() {
     }
   };
 
+  // Buraya ekle:
+  const openInMaps = () => {
+    const { lat, lng } = weddingLocation.coordinates;
+    const url = `https://www.google.com/maps?q=${lat},${lng}`;
+    window.open(url, '_blank');
+  };
+
   const deleteRecording = () => {
     setAudioBlob(null);
     setConvertedBlob(null);
@@ -366,22 +383,45 @@ export default function Home() {
       )}
 
       {/* Başlık - Responsive */}
-      <div className="mb-8 md:mb-12 text-center max-w-4xl">
+      <div className="text-center max-w-4xl">
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font text-gray-900 mb-4 md:mb-8 italic leading-tight">
           Abdulsamet & Zehra
         </h1>
         <h1 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-4 leading-relaxed">
           Düğünümüze Hoşgeldiniz
           <br />
-          30.08.2025
+          30.08.2025-16:00
         </h1>
-        <p className="text-sm sm:text-base md:text-lg text-gray-600 px-4">
-          Düğün fotoğraflarınızı yükleyebilir ve ses kayıtları yapabilirsiniz
+      </div>
+	  {/* Konum Bilgisi Bölümü */}
+      <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">  
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
+          📍 Düğün Salonu Konumu
+        </h2>
+        
+        <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border text-center">
+          <div className="mb-4">
+            <h3 className="font-semibold text-lg text-gray-800 mb-2">{weddingLocation.name}</h3>
+            <p className="text-gray-600 text-sm">{weddingLocation.address}</p>
+          </div>
+          
+          <button
+            onClick={openInMaps}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center mx-auto gap-2"
+          >
+            <span>🗺️</span>
+            <span>Haritada Göster</span>
+          </button>
+        </div>
+	  </div>
+      <div className="mb-8 md:mb-2 text-center max-w-4xl">
+ 	    <p className="text-sm sm:text-base md:text-lg text-gray-600 px-4">
+          Bu özel günümüzde çektiğiniz güzel anıları ve içten dileklerinizi bizimle paylaşabilirsiniz
         </p>
       </div>
-
       {/* Fotoğraf/Video Yükleme - Mobile Responsive */}
       <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
           📸 Fotoğraf ve Video Yükleme
         </h2>
