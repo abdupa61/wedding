@@ -15,7 +15,13 @@ export default function Home() {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showLocationSection, setShowLocationSection] = useState(false);
-  
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+  const weddingDate = new Date('2025-08-30T16:00:00');
   // Başarı mesajları için state'ler
   const [showFileSuccess, setShowFileSuccess] = useState(false);
   const [showAudioSuccess, setShowAudioSuccess] = useState(false);
@@ -57,6 +63,33 @@ export default function Home() {
     address: "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon",
   };
 
+  //Geri Sayım Fonksiyonu
+  const calculateTimeLeft = () => {
+    const now = new Date().getTime();
+    const wedding = weddingDate.getTime();
+    const difference = wedding - now;
+  
+    if (difference > 0) {
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((difference % (1000 * 60)) / 1000)
+      };
+    }
+    return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+  };
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+    
+    // İlk çalıştırma
+    setTimeLeft(calculateTimeLeft());
+    
+    return () => clearInterval(timer);
+  }, []);
   // Dosya yükleme için hook
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res: any[]) => {
@@ -388,6 +421,30 @@ export default function Home() {
           <br />
           30.08.2025-16:00
         </h1>
+      </div>
+      {/* Geri Sayım */}
+      <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+        <div className="bg-white from-white-500 text-black p-2 rounded-lg shadow-lg text-center">
+          <h3 className="text-lg font-semibold mb-1">💕 Düğüne Kalan Süre</h3>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="bg-gray-200 rounded-lg p-1">
+              <div className="text-lg font-bold">{timeLeft.days}</div>
+              <div className="text-xs">Gün</div>
+            </div>
+            <div className="bg-gray-200 rounded-lg p-1">
+              <div className="text-lg font-bold">{timeLeft.hours}</div>
+              <div className="text-xs">Saat</div>
+            </div>
+            <div className="bg-gray-200 rounded-lg p-1">
+              <div className="text-lg font-bold">{timeLeft.minutes}</div>
+              <div className="text-xs">Dakika</div>
+            </div>
+            <div className="bg-gray-200 rounded-lg p-1">
+              <div className="text-lg font-bold">{timeLeft.seconds}</div>
+              <div className="text-xs">Saniye</div>
+            </div>
+          </div>
+        </div>
       </div>
 	  {/* Konum Bilgisi Bölümü */}
       <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">  
