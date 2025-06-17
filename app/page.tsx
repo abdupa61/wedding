@@ -55,10 +55,6 @@ export default function Home() {
   const weddingLocation = {
     name: "Mercan Korupark",
     address: "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon",
-    coordinates: {
-      lat: 36.8127, // Mersin koordinatları örnek
-      lng: 34.6415
-    }
   };
 
   // Dosya yükleme için hook
@@ -334,8 +330,8 @@ export default function Home() {
 
   // Buraya ekle:
   const openInMaps = () => {
-    const { lat, lng } = weddingLocation.coordinates;
-    const url = `https://www.google.com/maps?q=${lat},${lng}`;
+    const searchTerm = "Mercan Korupark Akçaabat Trabzon";
+    const url = `https://www.google.com/maps/search/${encodeURIComponent(searchTerm)}`;
     window.open(url, '_blank');
   };
 
