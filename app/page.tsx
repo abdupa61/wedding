@@ -413,19 +413,25 @@ export default function Home() {
 
       {/* Başlık - Responsive */}
       <div className="text-center max-w-4xl">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font text-gray-900 mb-4 md:mb-8 italic leading-tight">
-          Abdulsamet & Zehra
+        <h1 className="text-3xl sm:text-4xl md:text-3xl lg:text-5xl font text-gray-900 mb-4 md:mb-2 italic leading-tight">
+          Abdulsamet & Zehra Nurcan
         </h1>
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-4 leading-relaxed">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-8 leading-relaxed">
           Düğünümüze Hoşgeldiniz
-          <br />
-          30.08.2025-16:00
         </h1>
       </div>
+
       {/* Geri Sayım */}
       <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+		<div className="mb-1 md:mb-1 w-full max-w-sm sm:max-w-md md:max-w-lg">  
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
+            👰🤵 Düğüne Kalan Süre
+          </h2>
+		</div>
         <div className="bg-white from-white-500 text-black p-2 rounded-lg shadow-lg text-center">
-          <h3 className="text-lg font-semibold mb-1">💕 Düğüne Kalan Süre</h3>
+          <div className="text-sm text-gray-600 mb-3 font-medium">
+            📅 30 Ağustos 2025 - Saat 16:00
+          </div>
           <div className="grid grid-cols-4 gap-2 text-center">
             <div className="bg-gray-200 rounded-lg p-1">
               <div className="text-lg font-bold">{timeLeft.days}</div>
@@ -467,8 +473,8 @@ export default function Home() {
           </button>
         </div>
 	  </div>
-      <div className="mb-8 md:mb-2 text-center max-w-4xl">
- 	    <p className="text-sm sm:text-base md:text-lg text-gray-600 px-4">
+      <div className="mb-8 md:mb-2 text-center max-w-5xl">
+ 	    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 px-4">
           Bu özel günümüzde çektiğiniz güzel anıları ve içten dileklerinizi bizimle paylaşabilirsiniz
         </p>
       </div>
