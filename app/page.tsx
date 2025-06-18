@@ -680,10 +680,7 @@ export default function Home() {
         <h1 className="text-2xl sm:text-3xl md:text-4xl font text-gray-900 mb-4 md:mb-2 italic whitespace-nowrap inline-block">
           Abdulsamet & Zehra Nurcan
         </h1>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-8 leading-relaxed">
-          Düğünümüze Hoşgeldiniz
-        </h2>
-	  </div>
+      </div>
       {/* Geri Sayım */}
       <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
 		<div className="mb-1 md:mb-1 w-full max-w-sm sm:max-w-md md:max-w-lg">  
