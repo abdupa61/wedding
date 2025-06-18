@@ -631,9 +631,8 @@ export default function Home() {
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
           <button
             onClick={startMusic}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-bounce"
-          >
-            🎵 Düğün Müziğini Başlat
+            className="bg-gradient-to-r from-pink-300 to-pink-500 hover:from-pink-200 hover:to-purple-300 text-white px-4 py-2 text-sm rounded-full shadow-lg flex items-center gap-2 animate-bounce"          >
+            🎵 Müziği Başlat
           </button>
         </div>
       )}
