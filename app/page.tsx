@@ -820,7 +820,7 @@ export default function Home() {
         </div>
       </div>
 	  {/* Not/Mesaj Yazma Bölümü - Mobile Responsive */}
-      <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+      <div className="mt-10 mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
           📝 Mesaj Yazma
         </h2>
