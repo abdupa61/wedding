@@ -1,7 +1,7 @@
 "use client";
 import { useUploadThing } from "@/src/utils/uploadthing";
 import { useRouter } from "next/navigation";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Image from 'next/image';
 
 export default function Home() {
@@ -21,7 +21,10 @@ export default function Home() {
     minutes: 0,
     seconds: 0
   });
-  const weddingDate = new Date('2025-08-30T16:00:00');
+  
+  // Wedding date - useMemo ile stable hale getir
+  const weddingDate = useMemo(() => new Date('2025-08-30T16:00:00'), []);
+  
   // Başarı mesajları için state'ler
   const [showFileSuccess, setShowFileSuccess] = useState(false);
   const [showAudioSuccess, setShowAudioSuccess] = useState(false);
@@ -39,6 +42,21 @@ export default function Home() {
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Not yazma için state'ler
+  const [noteText, setNoteText] = useState("");
+  const [noteAuthor, setNoteAuthor] = useState("");
+  const [isUploadingNote, setIsUploadingNote] = useState(false);
+  const [showNoteSuccess, setShowNoteSuccess] = useState(false);
+
+  useEffect(() => {
+    if (showNoteSuccess) {
+      const timer = setTimeout(() => {
+        setShowNoteSuccess(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showNoteSuccess]);
+
   // Başarı mesajlarını otomatik gizleme
   useEffect(() => {
     if (showFileSuccess) {
@@ -49,6 +67,22 @@ export default function Home() {
     }
   }, [showFileSuccess]);
 
+  // Component unmount cleanup
+  useEffect(() => {
+    return () => {
+      // Cleanup all refs and timers
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
+  
   useEffect(() => {
     if (showAudioSuccess) {
       const timer = setTimeout(() => {
@@ -63,12 +97,44 @@ export default function Home() {
     address: "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon",
   };
 
-  //Geri Sayım Fonksiyonu
-  const calculateTimeLeft = () => {
+  const uploadNote = async () => {
+    if (!noteText.trim()) {
+      alert("Lütfen bir mesaj yazın!");
+      return;
+    }
+    
+    if (!isValidName(noteAuthor)) {
+      alert("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)");
+      return;
+    }
+  
+    try {
+      // Dosya adını isim ve tarih ile oluştur
+      const sanitizedName = noteAuthor.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
+      const timestamp = new Date().toLocaleString('tr-TR').replace(/[/:]/g, '-').replace(/\s/g, '_');
+      const fileName = `not-${sanitizedName}-${timestamp}.txt`;
+      
+      // Not içeriğini oluştur
+      const noteContent = `Gönderen: ${noteAuthor}\nTarih: ${new Date().toLocaleString('tr-TR')}\n\nMesaj:\n${noteText}`;
+      
+      const noteFile = new File([noteContent], fileName, {
+        type: "text/plain",
+      });
+  
+      await startNoteUpload([noteFile]);
+    } catch (error: any) {
+      console.error("❌ Not yükleme hatası:", error);
+      alert(`Not yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`);
+      setIsUploadingNote(false);
+    }
+  };
+
+  // Geri Sayım Fonksiyonu - useCallback ile stable hale getir
+  const calculateTimeLeft = useCallback(() => {
     const now = new Date().getTime();
     const wedding = weddingDate.getTime();
     const difference = wedding - now;
-  
+
     if (difference > 0) {
       return {
         days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -78,18 +144,20 @@ export default function Home() {
       };
     }
     return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-  };
+  }, [weddingDate]);
   
+  // Geri sayım timer - stable dependencies
   useEffect(() => {
+    // İlk değeri hemen set et
+    setTimeLeft(calculateTimeLeft());
+    
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
-    
-    // İlk çalıştırma
-    setTimeLeft(calculateTimeLeft());
-    
+  
     return () => clearInterval(timer);
-  }, []);
+  }, [calculateTimeLeft]); // Add calculateTimeLeft to dependencies
+  
   // Dosya yükleme için hook
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res: any[]) => {
@@ -115,6 +183,26 @@ export default function Home() {
     },
     onUploadProgress: (progress: number) => {
       setUploadProgress(progress);
+    },
+  });
+
+  // Not yükleme için ayrı hook
+  const { startUpload: startNoteUpload, isUploading: noteUploadThingUploading } = useUploadThing("imageUploader", {
+    onClientUploadComplete: (res: any[]) => {
+      console.log("✅ Not yükleme tamamlandı:", res);
+      setNoteText("");
+      setNoteAuthor("");
+      setIsUploadingNote(false);
+      setShowNoteSuccess(true);
+    },
+    onUploadError: (error: Error) => {
+      console.error("❌ Not yükleme hatası:", error);
+      alert(`Yükleme hatası: ${error.message}`);
+      setIsUploadingNote(false);
+    },
+    onUploadBegin: (name: string) => {
+      console.log("📤 Not yükleme başladı:", name);
+      setIsUploadingNote(true);
     },
   });
 
@@ -181,10 +269,13 @@ export default function Home() {
     if (selectedFiles.length === 0) return;
     
     try {
+      setIsUploadingFile(true);
       await startUpload(selectedFiles);
     } catch (error: any) {
       console.error("❌ Dosya yükleme hatası:", error);
       alert(`Dosya yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`);
+      setIsUploadingFile(false);
+      setUploadProgress(0);
     }
   };
 
@@ -257,42 +348,52 @@ export default function Home() {
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    try {
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+  
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+  
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+      }
+    } catch (error) {
+      console.error("Recording stop error:", error);
       setIsRecording(false);
-
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
     }
   };
 
   const convertToWav = async (inputBlob: Blob) => {
     setIsConverting(true);
+    let audioContext: AudioContext | null = null;
+    
     try {
-      const audioContext = new AudioContext();
+      audioContext = new AudioContext();
       const arrayBuffer = await inputBlob.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
+  
       const channelData = audioBuffer.getChannelData(0);
       const samples = new Int16Array(channelData.length);
-
+  
       for (let i = 0; i < channelData.length; i++) {
         samples[i] = Math.max(-32768, Math.min(32767, channelData[i] * 32768));
       }
-
+  
       const wavBlob = createWavBlob(samples, audioBuffer.sampleRate);
       setConvertedBlob(wavBlob);
-
-      await audioContext.close();
     } catch (error) {
       console.error("Dönüştürme hatası:", error);
       setConvertedBlob(inputBlob);
     } finally {
+      if (audioContext && audioContext.state !== 'closed') {
+        await audioContext.close();
+      }
       setIsConverting(false);
     }
   };
@@ -374,19 +475,21 @@ export default function Home() {
     setRecordingTime(0);
   };
 
+  // Audio URL - sadece blob'lar değiştiğinde yeniden hesapla
   const audioUrl = useMemo(() => {
     if (convertedBlob) return URL.createObjectURL(convertedBlob);
     if (audioBlob) return URL.createObjectURL(audioBlob);
     return null;
   }, [convertedBlob, audioBlob]);
 
+  // Audio URL cleanup - sadece component unmount'ta çalışır
   useEffect(() => {
     return () => {
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
     };
-  }, [audioUrl]);
+  }, [audioUrl]); // boş dependency array
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -404,6 +507,13 @@ export default function Home() {
         </div>
       )}
       
+	  {showNoteSuccess && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+          <span className="text-lg">📝</span>
+          <span className="font-semibold">Mesajınız başarıyla gönderildi!</span>
+        </div>
+      )}
+
       {showAudioSuccess && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
           <span className="text-lg">🎤</span>
@@ -412,8 +522,8 @@ export default function Home() {
       )}
 
       {/* Başlık - Responsive */}
-      <div className="text-center max-w-4xl">
-        <h1 className="text-3xl sm:text-4xl md:text-3xl lg:text-3xl font text-gray-900 mb-4 md:mb-2 italic leading-tight">
+      <div className="text-center max-w-4xl overflow-x-auto">
+        <h1 className="text-3xl sm:text-4xl md:text-3xl lg:text-3xl font text-gray-900 mb-4 md:mb-2 italic leading-tight whitespace-nowrap">
           Abdulsamet & Zehra Nurcan
         </h1>
         <h1 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-8 leading-relaxed">
@@ -707,6 +817,85 @@ export default function Home() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+	  {/* Not/Mesaj Yazma Bölümü - Mobile Responsive */}
+      <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
+          📝 Mesaj Yazma
+        </h2>
+      
+        <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border space-y-4">
+          {/* İsim Girişi */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              İsminizi girin (Adınız ve Soyadınız):
+            </label>
+            <input
+              type="text"
+              value={noteAuthor}
+              onChange={(e) => setNoteAuthor(e.target.value)}
+              placeholder="Örn: Ahmet Yılmaz"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+              maxLength={50}
+              autoComplete="off"
+              spellCheck="false"
+            />
+            {noteAuthor.trim() && !isValidName(noteAuthor) && (
+              <p className="text-xs text-orange-600">
+                ⚠️ Lütfen adınızı ve soyadınızı tam olarak girin
+              </p>
+            )}
+            {isValidName(noteAuthor) && (
+              <p className="text-xs text-green-600">
+                ✅ İsim bilgisi uygun
+              </p>
+            )}
+          </div>
+      
+          {/* Mesaj Yazma Alanı */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Mesajınızı yazın:
+            </label>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Düğün için güzel dileklerinizi, anılarınızı veya mesajınızı buraya yazabilirsiniz..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base resize-none"
+              rows={4}
+              maxLength={1000}
+            />
+            <div className="flex justify-between items-center text-xs text-gray-500">
+              <span>Maksimum 1000 karakter</span>
+              <span>{noteText.length}/1000</span>
+            </div>
+          </div>
+      
+          {/* Gönder Butonu */}
+          <button
+            onClick={uploadNote}
+            disabled={isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(noteAuthor)}
+            className={`w-full py-2.5 md:py-3 px-3 md:px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
+              isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(noteAuthor)
+                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                : "bg-purple-600 hover:bg-purple-700 text-white"
+            }`}
+          >
+            {(isUploadingNote || noteUploadThingUploading) ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                <span className="hidden sm:inline">Gönderiliyor...</span>
+                <span className="sm:hidden">Gönderiliyor</span>
+              </>
+            ) : (
+              <>
+                <span>📤</span>
+                <span className="hidden sm:inline">Mesajı Gönder</span>
+                <span className="sm:hidden">Gönder</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </main>
