@@ -524,7 +524,7 @@ export default function Home() {
       {/* Başlık - Responsive */}
       <div className="text-center max-w-4xl overflow-x-auto">
         <h1 className="text-3xl sm:text-4xl md:text-3xl lg:text-2xl font text-gray-900 mb-4 md:mb-2 italic leading-tight whitespace-nowrap">
-          Abdulsamet & Zehra Nurcan
+          Abdulsamet&Zehra Nurcan
         </h1>
         <h1 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-8 leading-relaxed">
           Düğünümüze Hoşgeldiniz
