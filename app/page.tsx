@@ -22,6 +22,12 @@ export default function Home() {
     seconds: 0
   });
   
+  // wedding music
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [showMusicButton, setShowMusicButton] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null)
+  
   // Wedding date - useMemo ile stable hale getir
   const weddingDate = useMemo(() => new Date('2025-08-30T16:00:00'), []);
   
@@ -48,6 +54,69 @@ export default function Home() {
   const [isUploadingNote, setIsUploadingNote] = useState(false);
   const [showNoteSuccess, setShowNoteSuccess] = useState(false);
 
+  // Müzik kontrolü
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+  
+    const handleCanPlay = () => {
+      console.log("🎵 Müzik dosyası hazır");
+      audio.volume = 0.3;
+      
+      if (userInteracted) {
+        audio.play()
+          .then(() => {
+            console.log("🎵 Müzik başlatıldı");
+            setMusicPlaying(true);
+            setShowMusicButton(false);
+          })
+          .catch(() => {
+            setShowMusicButton(true);
+          });
+      } else {
+        setShowMusicButton(true);
+      }
+    };
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('play', () => setMusicPlaying(true));
+    audio.addEventListener('pause', () => setMusicPlaying(false));
+  
+    return () => {
+      audio.removeEventListener('canplay', handleCanPlay);
+    };
+  }, [userInteracted]);
+  
+  // Kullanıcı etkileşimi takibi
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      setUserInteracted(true);
+      
+      const audio = audioRef.current;
+      if (audio && !musicPlaying) {
+        audio.play()
+          .then(() => {
+            console.log("🎵 İlk etkileşim sonrası müzik başlatıldı");
+            setMusicPlaying(true);
+            setShowMusicButton(false);
+          })
+          .catch(() => {
+            setShowMusicButton(true);
+          });
+      }
+    };
+  
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, handleFirstInteraction, { once: true });
+    });
+  
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleFirstInteraction);
+      });
+    };
+  }, [musicPlaying]);
+  
   useEffect(() => {
     if (showNoteSuccess) {
       const timer = setTimeout(() => {
@@ -92,6 +161,56 @@ export default function Home() {
     }
   }, [showAudioSuccess]);
 
+  // Otomatik müzik başlatma
+  useEffect(() => {
+    const startMusic = () => {
+      if (audioRef.current) {
+        audioRef.current.volume = 0.3;
+        audioRef.current.play().catch(console.error);
+      }
+    };
+  
+    // Sayfa yüklendiğinde müziği başlat
+    startMusic();
+    
+    // Kullanıcı etkileşimi sonrası da dene (tarayıcı politikası için)
+    const handleInteraction = () => {
+      startMusic();
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+    };
+    
+    document.addEventListener('click', handleInteraction);
+    document.addEventListener('touchstart', handleInteraction);
+    
+    return () => {
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+    };
+  }, []);
+
+  // Müzik fonksiyonları
+  const startMusic = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.play()
+        .then(() => {
+          setMusicPlaying(true);
+          setShowMusicButton(false);
+          setUserInteracted(true);
+        })
+        .catch(console.error);
+    }
+  };
+  
+  const stopMusic = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      setMusicPlaying(false);
+    }
+  };
+
   const weddingLocation = {
     name: "Mercan Korupark",
     address: "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon",
@@ -128,7 +247,7 @@ export default function Home() {
       setIsUploadingNote(false);
     }
   };
-
+  
   // Geri Sayım Fonksiyonu - useCallback ile stable hale getir
   const calculateTimeLeft = useCallback(() => {
     const now = new Date().getTime();
@@ -499,6 +618,42 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center px-4 py-8 sm:px-6 md:px-8 lg:px-24">
+	  {/* Otomatik Müzik */}
+      <audio
+        ref={audioRef}
+        src="/wedding-music.mp3"
+        loop
+        preload="auto"
+        className="hidden"
+      />
+	  {/* Müzik başlat butonu */}
+      {showMusicButton && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
+          <button
+            onClick={startMusic}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-bounce"
+          >
+            🎵 Düğün Müziğini Başlat
+          </button>
+        </div>
+      )}
+      
+      {/* Müzik Kontrol Paneli */}
+      {musicPlaying && (
+        <div className="fixed bottom-4 left-4 z-50 bg-white bg-opacity-90 backdrop-blur-sm border border-gray-200 px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-green-500 animate-pulse">🎵</span>
+            <span className="text-sm font-medium text-gray-700">Müzik çalıyor</span>
+          </div>
+          <button
+            onClick={stopMusic}
+            className="text-gray-500 hover:text-red-500 transition-colors"
+            title="Müziği durdur"
+          >
+            ⏸️
+          </button>
+        </div>
+      )}
       {/* Başarı Mesajları - Fixed pozisyon */}
       {showFileSuccess && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
@@ -526,10 +681,10 @@ export default function Home() {
         <h1 className="text-2xl sm:text-3xl md:text-4xl font text-gray-900 mb-4 md:mb-2 italic whitespace-nowrap inline-block">
           Abdulsamet & Zehra Nurcan
         </h1>
-      </div>
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-8 leading-relaxed">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-italic gray-900 mb-3 md:mb-8 leading-relaxed">
           Düğünümüze Hoşgeldiniz
-        </h1>
+        </h2>
+	  </div>
       {/* Geri Sayım */}
       <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
 		<div className="mb-1 md:mb-1 w-full max-w-sm sm:max-w-md md:max-w-lg">  
