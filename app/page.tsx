@@ -860,7 +860,7 @@ export default function Home() {
       </div>
 
       {/* Ses Kayıt Bölümü - Mobile Responsive */}
-      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg dark:text-black">
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
           🎤 Ses Kaydı
         </h2>
@@ -981,7 +981,7 @@ export default function Home() {
           📝 Mesaj Yazma
         </h2>
       
-        <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border space-y-4">
+        <div className="bg-white dark:text-black p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border space-y-4">
           {/* İsim Girişi */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 ">
