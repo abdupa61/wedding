@@ -21,7 +21,8 @@ export default function Home() {
     minutes: 0,
     seconds: 0
   });
-  
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [isAddingParticipant, setIsAddingParticipant] = useState(false);
   const [activeTab, setActiveTab] = useState('text'); // 'text' veya 'voice'
   // wedding music
   const [musicPlaying, setMusicPlaying] = useState(false);
@@ -154,6 +155,21 @@ export default function Home() {
   }, []);
   
   useEffect(() => {
+    const loadExistingParticipants = async () => {
+      try {
+        const response = await fetch('/api/get-participants');
+        if (response.ok) {
+          const data = await response.json();
+          setParticipants(data.participants || []);
+        }
+      } catch (error) {
+        console.log('Mevcut katılımcılar yüklenemedi:', error);
+      }
+    };
+  loadExistingParticipants();
+  }, []);
+  
+  useEffect(() => {
     if (showAudioSuccess) {
       const timer = setTimeout(() => {
         setShowAudioSuccess(false);
@@ -190,6 +206,106 @@ export default function Home() {
     };
   }, []);
 
+  // 2. Katılımcı ekleme fonksiyonu - Güvenli versiyon
+  const addParticipant = async (name: string) => {
+    if (!isValidName(name)) {
+      return false;
+    }
+    
+    try {
+      setIsAddingParticipant(true);
+      
+      // 1. Mevcut katılımcı listesini indir
+      let existingParticipants: string[] = [];
+      let existingFileKey: string | null = null;
+      
+      try {
+        console.log('📋 Mevcut katılımcı listesi getiriliyor...');
+        const response = await fetch('/api/get-participants');
+        if (response.ok) {
+          const data = await response.json();
+          existingParticipants = data.participants || [];
+          existingFileKey = data.fileKey;
+          console.log('📋 Mevcut katılımcılar:', existingParticipants.length, 'FileKey:', existingFileKey);
+        }
+      } catch (error) {
+        console.log("📋 Mevcut liste bulunamadı, yeni liste oluşturuluyor...");
+      }
+      
+      // 2. Aynı isim zaten var mı kontrol et
+      const trimmedName = name.trim();
+      if (existingParticipants.includes(trimmedName)) {
+        alert("Bu isim zaten katılımcı listesinde mevcut!");
+        return false;
+      }
+      
+      // 3. Yeni katılımcıyı ekle
+      const updatedParticipants = [...existingParticipants, trimmedName];
+      console.log('📋 Güncellenmiş katılımcı listesi:', updatedParticipants.length, 'katılımcı');
+      
+      // 4. Yeni JSON dosyasını oluştur
+      const participantData = {
+        participants: updatedParticipants,
+        lastUpdated: new Date().toISOString(),
+        totalCount: updatedParticipants.length
+      };
+      
+      const jsonContent = JSON.stringify(participantData, null, 2);
+      const jsonFile = new File([jsonContent], "katilimci-listesi.json", {
+        type: "application/json",
+      });
+      
+      // 5. State'i güncelle (UI'da göstermek için)
+      setParticipants(updatedParticipants);
+      
+      // 6. ÖNCE yeni dosyayı yükle
+      console.log('📤 Yeni katılımcı dosyası yükleniyor...');
+      await startParticipantUpload([jsonFile]);
+      
+      // 7. Yeni dosya yüklendikten SONRA eski dosyayı sil
+      if (existingFileKey) {
+        try {
+          console.log('🗑️ Eski dosya siliniyor:', existingFileKey);
+          
+          // Yeni dosyanın tamamen yüklendiğinden emin olmak için kısa bir bekleme
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const deleteResponse = await fetch('/api/delete-file', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fileKey: existingFileKey }),
+          });
+          
+          const deleteResult = await deleteResponse.json();
+          if (deleteResponse.ok && deleteResult.success) {
+            console.log('🗑️ Eski dosya başarıyla silindi');
+          } else {
+            console.warn('🗑️ Eski dosya silinemedi:', deleteResult);
+            // Eski dosya silinemese bile işlem başarılı sayılır
+          }
+        } catch (error) {
+          console.warn("🗑️ Eski dosya silme hatası:", error);
+          // Eski dosya silme hatası kritik değil, işlem devam eder
+        }
+      }
+      
+      console.log('✅ Katılımcı başarıyla eklendi:', trimmedName);
+      return true;
+      
+    } catch (error) {
+      console.error("❌ Katılımcı ekleme hatası:", error);
+      alert("Katılımcı eklenirken hata oluştu!");
+      
+      // Hata durumunda state'i geri al
+      setParticipants(prev => prev.filter(p => p !== name.trim()));
+      return false;
+    } finally {
+      setIsAddingParticipant(false);
+    }
+  };
+  
   // Müzik fonksiyonları
   const startMusic = () => {
     const audio = audioRef.current;
@@ -230,6 +346,8 @@ export default function Home() {
       return;
     }
   
+    await addParticipant(userName);
+	
     try {
       // Dosya adını isim ve tarih ile oluştur
       const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
@@ -250,6 +368,7 @@ export default function Home() {
       setIsUploadingNote(false);
     }
   };
+  
   
   // Geri Sayım Fonksiyonu - useCallback ile stable hale getir
   const calculateTimeLeft = useCallback(() => {
@@ -280,6 +399,30 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [calculateTimeLeft]); // Add calculateTimeLeft to dependencies
   
+  
+  // 3. Katılımcı yükleme için yeni hook
+  const { startUpload: startParticipantUpload, isUploading: participantUploadThingUploading } = useUploadThing("imageUploader", {
+    onClientUploadComplete: (res: any[]) => {
+      console.log("✅ Katılımcı listesi güncellendi:", res);
+      console.log("✅ Yeni dosya key:", res[0]?.key);
+      // Başarı durumunda herhangi bir işlem yapmaya gerek yok
+      // State zaten addParticipant fonksiyonunda güncellendi
+    },
+    onUploadError: (error: Error) => {
+      console.error("❌ Katılımcı listesi yükleme hatası:", error);
+      alert(`Katılımcı listesi yükleme hatası: ${error.message}`);
+      // Hata durumunda son eklenen katılımcıyı state'ten kaldır
+      setParticipants(prev => {
+        const newList = [...prev];
+        newList.pop(); // Son eklenen katılımcıyı kaldır
+        return newList;
+      });
+    },
+    onUploadBegin: (name: string) => {
+      console.log("📤 Katılımcı listesi yükleme başladı:", name);
+    },
+  });
+
   // Dosya yükleme için hook
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res: any[]) => {
@@ -371,6 +514,19 @@ export default function Home() {
     setIsDragging(false);
   };
 
+  // 5. Alternatif: Manuel katılımcı ekleme butonu
+  const handleAddParticipant = async () => {
+    if (!isValidName(userName)) {
+      alert("Lütfen geçerli bir isim girin!");
+      return;
+    }
+    
+    const success = await addParticipant(userName);
+    if (success) {
+      alert("Katılımcı listesine eklendi!");
+    }
+  };
+  
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
@@ -388,7 +544,6 @@ export default function Home() {
 
   const uploadFiles = async () => {
     if (selectedFiles.length === 0) return;
-    
     try {
       setIsUploadingFile(true);
       await startUpload(selectedFiles);
@@ -564,7 +719,7 @@ export default function Home() {
       alert("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)");
       return;
     }
-
+	
     try {
       // Dosya adını isim ve tarih ile oluştur
       const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
@@ -788,6 +943,30 @@ export default function Home() {
                 <p className="text-xs text-green-600">
                   ✅ İsim bilgisi uygun
                 </p>
+              )}
+			  {/* Mevcut input alanından sonra, validation mesajlarından sonra ekle */}
+              {isValidName(userName) && (
+                <button
+                  onClick={handleAddParticipant}
+                  disabled={isAddingParticipant || participantUploadThingUploading}
+                  className={`w-full py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
+                    isAddingParticipant || participantUploadThingUploading
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
+                  }`}
+                >
+                  {isAddingParticipant || participantUploadThingUploading ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      <span>Check-in yapılıyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✅</span>
+                      <span>Check-in Yap</span>
+                    </>
+                  )}
+                </button>
               )}
             </div>
           </div>
@@ -1039,8 +1218,7 @@ export default function Home() {
                         {isConverting ? "🔄 Ses dönüştürülüyor..." : "✅ Kayıt tamamlandı!"}
                       </p>
                       <p className="text-sm text-green-600">
-                        Süre: {formatTime(recordingTime)} • Format: WAV
-                        {userName.trim() && ` • Kayıt sahibi: ${userName}`}
+                        Süre: {formatTime(recordingTime)} {userName.trim() && ` • Kayıt sahibi: ${userName}`}
                       </p>
                     </div>
         
