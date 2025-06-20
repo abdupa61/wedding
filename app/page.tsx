@@ -22,6 +22,7 @@ export default function Home() {
     seconds: 0
   });
   
+  const [activeTab, setActiveTab] = useState('text'); // 'text' veya 'voice'
   // wedding music
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [showMusicButton, setShowMusicButton] = useState(false);
@@ -36,8 +37,7 @@ export default function Home() {
   const [showAudioSuccess, setShowAudioSuccess] = useState(false);
   
   // Ses kaydı için isim state'i eklendi
-  const [recordingName, setRecordingName] = useState("");
-  const [showNameInput, setShowNameInput] = useState(false);
+  const [userName, setUserName] = useState("");
   const [userStoppedMusic, setUserStoppedMusic] = useState(false);
 
   // Dosya seçimi için state'ler
@@ -225,19 +225,19 @@ export default function Home() {
       return;
     }
     
-    if (!isValidName(noteAuthor)) {
+    if (!isValidName(userName)) {
       alert("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)");
       return;
     }
   
     try {
       // Dosya adını isim ve tarih ile oluştur
-      const sanitizedName = noteAuthor.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
+      const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
       const timestamp = new Date().toLocaleString('tr-TR').replace(/[/:]/g, '-').replace(/\s/g, '_');
       const fileName = `not-${sanitizedName}-${timestamp}.txt`;
       
       // Not içeriğini oluştur
-      const noteContent = `Gönderen: ${noteAuthor}\nTarih: ${new Date().toLocaleString('tr-TR')}\n\nMesaj:\n${noteText}`;
+      const noteContent = `Gönderen: ${userName}\nTarih: ${new Date().toLocaleString('tr-TR')}\n\nMesaj:\n${noteText}`;
       
       const noteFile = new File([noteContent], fileName, {
         type: "text/plain",
@@ -313,7 +313,6 @@ export default function Home() {
     onClientUploadComplete: (res: any[]) => {
       console.log("✅ Not yükleme tamamlandı:", res);
       setNoteText("");
-      setNoteAuthor("");
       setIsUploadingNote(false);
       setShowNoteSuccess(true);
     },
@@ -459,8 +458,7 @@ export default function Home() {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
-      setShowNameInput(false);
-
+	  
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
@@ -562,14 +560,14 @@ export default function Home() {
     }
 
     // İsim kontrolü sadece yükleme sırasında yapılacak
-    if (!isValidName(recordingName)) {
+    if (!isValidName(userName)) {
       alert("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)");
       return;
     }
 
     try {
       // Dosya adını isim ve tarih ile oluştur
-      const sanitizedName = recordingName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
+      const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
       const timestamp = new Date().toLocaleString('tr-TR').replace(/[/:]/g, '-').replace(/\s/g, '_');
       const fileName = `ses-kaydi-${sanitizedName}-${timestamp}.wav`;
       
@@ -621,192 +619,232 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center px-4 py-8 sm:px-6 md:px-8 lg:px-24">
-	  {/* Otomatik Müzik */}
-      <audio
-        ref={audioRef}
-        src="/wedding-music.mp3"
-        loop
-        preload="auto"
-        className="hidden"
-      />
-	  {/* Müzik başlat butonu */}
-      {showMusicButton && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
-          <button
-            onClick={startMusic}
-            className="bg-gradient-to-r from-pink-300 to-pink-500 hover:from-pink-200 hover:to-purple-300 text-white px-4 py-2 text-sm rounded-full shadow-lg flex items-center gap-2 animate-bounce"          >
-            🎵 Müziği Başlat
-          </button>
-        </div>
-      )}
-      
-      {/* Müzik Kontrol Paneli */}
-      {(musicPlaying || userStoppedMusic) && userInteracted && (
-        <div className="fixed bottom-4 left-4 z-50 bg-white bg-opacity-90 backdrop-blur-sm border border-gray-200 px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className={musicPlaying ? "text-green-500 animate-pulse" : "text-gray-500"}>🎵</span>
-            <span className="text-sm font-medium text-gray-700">
-              {musicPlaying ? "Müzik çalıyor" : "Müzik durdu"}
-            </span>
-          </div>
-          {musicPlaying ? (
-            <button
-              onClick={stopMusic}
-              className="text-gray-500 hover:text-red-500 transition-colors"
-              title="Müziği durdur"
-            >
-              ⏸️
-            </button>
-          ) : (
+      <main className="flex min-h-screen flex-col items-center px-4 py-8 sm:px-6 md:px-8 lg:px-24">
+        {/* Otomatik Müzik */}
+        <audio
+          ref={audioRef}
+          src="/wedding-music.mp3"
+          loop
+          preload="auto"
+          className="hidden"
+        />
+        {/* Müzik başlat butonu */}
+        {showMusicButton && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
             <button
               onClick={startMusic}
-              className="text-gray-500 hover:text-green-500 transition-colors"
-              title="Müziği başlat"
+              className="bg-gradient-to-r from-pink-300 to-pink-500 hover:from-pink-200 hover:to-purple-300 text-white px-4 py-2 text-sm rounded-full shadow-lg flex items-center gap-2 animate-bounce"
             >
-              ▶️
+              🎵 Müziği Başlat
             </button>
-          )}
+          </div>
+        )}
+        
+        {/* Müzik Kontrol Paneli */}
+        {(musicPlaying || userStoppedMusic) && userInteracted && (
+          <div className="fixed bottom-4 left-4 z-50 bg-white bg-opacity-90 backdrop-blur-sm border border-gray-200 px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className={musicPlaying ? "text-green-500 animate-pulse" : "text-gray-500"}>🎵</span>
+              <span className="text-sm font-medium text-gray-700">
+                {musicPlaying ? "Müzik çalıyor" : "Müzik durdu"}
+              </span>
+            </div>
+            {musicPlaying ? (
+              <button
+                onClick={stopMusic}
+                className="text-gray-500 hover:text-red-500 transition-colors"
+                title="Müziği durdur"
+              >
+                ⏸️
+              </button>
+            ) : (
+              <button
+                onClick={startMusic}
+                className="text-gray-500 hover:text-green-500 transition-colors"
+                title="Müziği başlat"
+              >
+                ▶️
+              </button>
+            )}
+          </div>
+        )}
+        
+        {/* Başarı Mesajları - Fixed pozisyon */}
+        {showFileSuccess && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+            <span className="text-lg">✅</span>
+            <span className="font-semibold">Dosyalar başarıyla gönderildi!</span>
+          </div>
+        )}
+        
+        {showNoteSuccess && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+            <span className="text-lg">📝</span>
+            <span className="font-semibold">Mesajınız başarıyla gönderildi!</span>
+          </div>
+        )}
+  
+        {showAudioSuccess && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+            <span className="text-lg">🎤</span>
+            <span className="font-semibold">Ses kaydı başarıyla gönderildi!</span>
+          </div>
+        )}
+  
+        {/* Başlık - Responsive */}
+        <div className="text-center max-w-4xl overflow-x-auto">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font text-gray-900 dark:text-white mb-4 md:mb-2 italic whitespace-nowrap inline-block">
+            Abdulsamet & Zehra Nurcan
+          </h1>
         </div>
-      )}
-      {/* Başarı Mesajları - Fixed pozisyon */}
-      {showFileSuccess && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
-          <span className="text-lg">✅</span>
-          <span className="font-semibold">Dosyalar başarıyla gönderildi!</span>
+        
+        {/* Geri Sayım */}
+        <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+          <div className="mb-1 md:mb-1 w-full max-w-sm sm:max-w-md md:max-w-lg">  
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
+              👰🤵 Düğüne Kalan Süre
+            </h2>
+          </div>
+          <div className="bg-white from-white-500 text-black p-2 rounded-lg shadow-lg text-center">
+            <div className="text-sm text-gray-600 mb-3 font-medium">
+              📅 30 Ağustos 2025 - Saat 16:00
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="bg-gray-200 rounded-lg p-1">
+                <div className="text-lg font-bold">{timeLeft.days}</div>
+                <div className="text-xs">Gün</div>
+              </div>
+              <div className="bg-gray-200  rounded-lg p-1">
+                <div className="text-lg font-bold">{timeLeft.hours}</div>
+                <div className="text-xs">Saat</div>
+              </div>
+              <div className="bg-gray-200 rounded-lg p-1">
+                <div className="text-lg font-bold">{timeLeft.minutes}</div>
+                <div className="text-xs">Dakika</div>
+              </div>
+              <div className="bg-gray-200 rounded-lg p-1">
+                <div className="text-lg font-bold">{timeLeft.seconds}</div>
+                <div className="text-xs">Saniye</div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-      
-	  {showNoteSuccess && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
-          <span className="text-lg">📝</span>
-          <span className="font-semibold">Mesajınız başarıyla gönderildi!</span>
-        </div>
-      )}
-
-      {showAudioSuccess && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
-          <span className="text-lg">🎤</span>
-          <span className="font-semibold">Ses kaydı başarıyla gönderildi!</span>
-        </div>
-      )}
-
-      {/* Başlık - Responsive */}
-      <div className="text-center max-w-4xl overflow-x-auto">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font text-gray-900 dark:text-white mb-4 md:mb-2 italic whitespace-nowrap inline-block">
-          Abdulsamet & Zehra Nurcan
-        </h1>
-	  </div>
-      {/* Geri Sayım */}
-      <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
-		<div className="mb-1 md:mb-1 w-full max-w-sm sm:max-w-md md:max-w-lg">  
+        
+        {/* Konum Bilgisi Bölümü */}
+        <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">  
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
-            👰🤵 Düğüne Kalan Süre
+            📍 Düğün Salonu Konumu
           </h2>
-		</div>
-        <div className="bg-white from-white-500 text-black p-2 rounded-lg shadow-lg text-center">
-          <div className="text-sm text-gray-600 mb-3 font-medium">
-            📅 30 Ağustos 2025 - Saat 16:00
-          </div>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div className="bg-gray-200 rounded-lg p-1">
-              <div className="text-lg font-bold">{timeLeft.days}</div>
-              <div className="text-xs">Gün</div>
+          
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border text-center">
+            <div className="mb-4">
+              <h3 className="font-semibold text-lg text-gray-800 mb-2">{weddingLocation.name}</h3>
+              <p className="text-gray-600  text-sm">{weddingLocation.address}</p>
             </div>
-            <div className="bg-gray-200  rounded-lg p-1">
-              <div className="text-lg font-bold">{timeLeft.hours}</div>
-              <div className="text-xs">Saat</div>
-            </div>
-            <div className="bg-gray-200 rounded-lg p-1">
-              <div className="text-lg font-bold">{timeLeft.minutes}</div>
-              <div className="text-xs">Dakika</div>
-            </div>
-            <div className="bg-gray-200 rounded-lg p-1">
-              <div className="text-lg font-bold">{timeLeft.seconds}</div>
-              <div className="text-xs">Saniye</div>
-            </div>
+            
+            <button
+              onClick={openInMaps}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center mx-auto gap-2"
+            >
+              <span>🗺️</span>
+              <span>Haritada Göster</span>
+            </button>
           </div>
         </div>
-      </div>
-	  {/* Konum Bilgisi Bölümü */}
-      <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">  
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
-          📍 Düğün Salonu Konumu
-        </h2>
         
-        <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border text-center">
-          <div className="mb-4">
-            <h3 className="font-semibold text-lg text-gray-800 mb-2">{weddingLocation.name}</h3>
-            <p className="text-gray-600  text-sm">{weddingLocation.address}</p>
-          </div>
-          
-          <button
-            onClick={openInMaps}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center mx-auto gap-2"
-          >
-            <span>🗺️</span>
-            <span>Haritada Göster</span>
-          </button>
+        <div className="mb-8 md:mb-2 text-center max-w-5xl">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-white px-4">
+            Bu özel günümüzde çektiğiniz güzel anıları ve içten dileklerinizi bizimle paylaşabilirsiniz
+          </p>
         </div>
-	  </div>
-      <div className="mb-8 md:mb-2 text-center max-w-5xl">
- 	    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-white px-4">
-          Bu özel günümüzde çektiğiniz güzel anıları ve içten dileklerinizi bizimle paylaşabilirsiniz
-        </p>
-      </div>
-      {/* Fotoğraf/Video Yükleme - Mobile Responsive */}
-      <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
-
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
-          📸 Fotoğraf ve Video Yükleme
-        </h2>
         
-        {/* Dosya Seçim Alanı - Mobile Optimized */}
-        <div
-          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 md:p-8 text-center transition-all duration-200 cursor-pointer ${
-            isDragging 
-              ? "border-blue-500 bg-blue-50" 
-              : "border-gray-300 hover:border-gray-400 bg-gray-50"
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <div className="text-4xl sm:text-5xl md:text-6xl mb-2 md:mb-4">📤</div>
-          <p className="text-base sm:text-lg font-semibold text-gray-700 mb-1 md:mb-2">
-            {isDragging ? "Dosyaları buraya bırakın" : "Dosya seçin veya sürükleyip bırakın"}
-          </p>
-          <p className="text-xs sm:text-sm text-gray-500 mb-3 md:mb-0">
-            Resim ve videolar (Maks. 1GB)
-          </p>
+        {/* İsim Girişi Bölümü */}
+        <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
+            👤 İsim Bilgisi
+          </h2>
           
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*,video/*,.heic,.heif,.mov,.mp4,.jpeg,.jpg,.png,.gif,.webp,.avif"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          
-          <button
-            type="button"
-            className="mt-3 md:mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Input'u temizle ve tıkla
-              if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-                fileInputRef.current.click();
-              }
-            }}
-          >
-            📁 Dosya Seç
-          </button>
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border dark:text-black">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                İsminizi girin (Adınız ve Soyadınız):
+              </label>
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Örn: Ahmet Yılmaz"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                maxLength={50}
+                autoComplete="off"
+                spellCheck="false"
+              />
+              {userName.trim() && !isValidName(userName) && (
+                <p className="text-xs text-orange-600">
+                  ⚠️ Lütfen adınızı ve soyadınızı tam olarak girin
+                </p>
+              )}
+              {isValidName(userName) && (
+                <p className="text-xs text-green-600">
+                  ✅ İsim bilgisi uygun
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-
-        {/* Seçilen Dosyalar Listesi - Mobile Responsive */}
+        
+        {/* Fotoğraf/Video Yükleme - Mobile Responsive */}
+        <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
+            📸 Fotoğraf ve Video Yükleme
+          </h2>
+          
+          {/* Dosya Seçim Alanı - Mobile Optimized */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-4 sm:p-6 md:p-8 text-center transition-all duration-200 cursor-pointer ${
+              isDragging 
+                ? "border-blue-500 bg-blue-50" 
+                : "border-gray-300 hover:border-gray-400 bg-gray-50"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="text-4xl sm:text-5xl md:text-6xl mb-2 md:mb-4">📤</div>
+            <p className="text-base sm:text-lg font-semibold text-gray-700 mb-1 md:mb-2">
+              {isDragging ? "Dosyaları buraya bırakın" : "Dosya seçin veya sürükleyip bırakın"}
+            </p>
+            <p className="text-xs sm:text-sm text-gray-500 mb-3 md:mb-0">
+              Resim ve videolar (Maks. 1GB)
+            </p>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/*,.heic,.heif,.mov,.mp4,.jpeg,.jpg,.png,.gif,.webp,.avif"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            <button
+              type="button"
+              className="mt-3 md:mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Input'u temizle ve tıkla
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                  fileInputRef.current.click();
+                }
+              }}
+            >
+              📁 Dosya Seç
+            </button>
+          </div>
+  
+          {/* Seçilen Dosyalar Listesi - Mobile Responsive */}
           {selectedFiles.length > 0 && (
             <div className="mt-3 md:mt-4 space-y-2">
               <h3 className="font-semibold text-gray-700 dark:text-white text-sm sm:text-base">Seçilen Dosyalar:</h3>
@@ -834,236 +872,230 @@ export default function Home() {
                         className="text-red-500 hover:text-red-700 font-bold text-sm sm:text-base p-1"
                       >
                         ✕
-                    </button>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Yükle Butonu - Mobile Responsive */}
-            <button
-              onClick={uploadFiles}
-              disabled={isUploadingFile || uploadThingUploading || selectedFiles.length === 0}
-              className={`w-full py-2.5 md:py-3 px-3 md:px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
-                isUploadingFile || uploadThingUploading || selectedFiles.length === 0
-                  ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700 text-white"
-              }`}
-            >
-              {isUploadingFile || uploadThingUploading ? (
-                <>
-                  <span className="animate-spin">⏳</span>
-                  <span className="hidden sm:inline">Yükleniyor...</span>
-                  <span className="sm:hidden">Yükleniyor</span>
-                  {uploadProgress > 0 && <span>%{uploadProgress}</span>}
-                </>
-              ) : (
-                <>
-                  <span>⬆️</span>
-                  <span className="hidden sm:inline">{selectedFiles.length} Dosyayı Yükle</span>
-                  <span className="sm:hidden">{selectedFiles.length} Dosya Yükle</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Ses Kayıt Bölümü - Mobile Responsive */}
-      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg dark:text-black">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
-          🎤 Ses Kaydı
-        </h2>
-
-        <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border">
-          {/* İsim Girişi - Her zaman göster */}
-          <div className="mb-4 space-y-3">
-            <label className="block text-sm font-medium text-gray-700 ">
-              İsminizi girin (Adınız ve Soyadınız):
-            </label>
-            <input
-              type="text"
-              value={recordingName}
-              onChange={(e) => setRecordingName(e.target.value)}
-              placeholder="Örn: Ahmet Yılmaz"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-              maxLength={50}
-              autoComplete="off"
-              spellCheck="false"
-            />
-            {recordingName.trim() && !isValidName(recordingName) && (
-              <p className="text-xs text-orange-600">
-                ⚠️ Lütfen adınızı ve soyadınızı tam olarak girin
-              </p>
-            )}
-            {isValidName(recordingName) && (
-              <p className="text-xs text-green-600">
-                ✅ İsim bilgisi uygun
-              </p>
-            )}
-          </div>
-
-          {!audioBlob ? (
-            <div className="text-center">
-              {!isRecording ? (
-                <button
-                  onClick={handleStartRecording}
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 md:py-3 px-4 md:px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto gap-2 text-sm sm:text-base"
-                >
-                  <span className="text-lg md:text-xl">🎤</span> 
-                  <span className="hidden sm:inline">Kayıt Başlat</span>
-                  <span className="sm:hidden">Kayıt</span>
-                </button>
-              ) : (
-                <div className="space-y-3 md:space-y-4">
-                  <div className="flex items-center justify-center gap-2 md:gap-3">
-                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-base md:text-lg font-mono text-red-600">{formatTime(recordingTime)}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 ">🎙️ Kayıt devam ediyor...</p>
-                  <button
-                    onClick={stopRecording}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 md:py-3 px-4 md:px-6 rounded-full transition-colors duration-200 text-sm sm:text-base"
-                  >
-                    ⏹️ <span className="hidden sm:inline">Kayıt Durdur</span><span className="sm:hidden">Durdur</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3 md:space-y-4">
-              <div className="text-center">
-                <p className="text-gray-600 mb-1 md:mb-2 text-sm sm:text-base">
-                  {isConverting ? "🔄 Ses dönüştürülüyor..." : "Kayıt tamamlandı!"}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-500 ">
-                  Süre: {formatTime(recordingTime)} • Format: WAV
-                  {recordingName.trim() && ` • Kayıt sahibi: ${recordingName}`}
-                </p>
+                ))}
               </div>
-
-              <audio controls className="w-full" src={audioUrl ?? undefined}>
-                Tarayıcınız ses oynatmayı desteklemiyor.
-              </audio>
-
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
-                <button
-                  onClick={uploadAudio}
-                  disabled={isUploading || audioUploadThingUploading || isConverting || !isValidName(recordingName)}
-                  className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
-                    isUploading || audioUploadThingUploading || isConverting || !isValidName(recordingName) ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  {(isUploading || audioUploadThingUploading) ? (
-                    <>
-                      <span className="animate-spin">⏳</span> 
-                      <span className="hidden sm:inline">Yükleniyor...</span>
-                      <span className="sm:hidden">Yükleniyor</span>
-                    </>
-                  ) : isConverting ? (
-                    <>
-                      <span className="animate-spin">🔄</span> 
-                      <span className="hidden sm:inline">Dönüştürülüyor...</span>
-                      <span className="sm:hidden">Dönüştürme</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>⬆️</span> 
-                      <span className="hidden sm:inline">Ses Yükle</span>
-                      <span className="sm:hidden">Yükle</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={deleteRecording}
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 sm:px-4 rounded transition-colors duration-200 text-sm sm:text-base"
-                >
-                  🗑️ Sil
-                </button>
-              </div>
+              
+              {/* Yükle Butonu - Mobile Responsive */}
+              <button
+                onClick={uploadFiles}
+                disabled={isUploadingFile || uploadThingUploading || selectedFiles.length === 0}
+                className={`w-full py-2.5 md:py-3 px-3 md:px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
+                  isUploadingFile || uploadThingUploading || selectedFiles.length === 0
+                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
+              >
+                {isUploadingFile || uploadThingUploading ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    <span className="hidden sm:inline">Yükleniyor...</span>
+                    <span className="sm:hidden">Yükleniyor</span>
+                    {uploadProgress > 0 && <span>%{uploadProgress}</span>}
+                  </>
+                ) : (
+                  <>
+                    <span>⬆️</span>
+                    <span className="hidden sm:inline">{selectedFiles.length} Dosyayı Yükle</span>
+                    <span className="sm:hidden">{selectedFiles.length} Dosya Yükle</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>
-      </div>
-	  {/* Not/Mesaj Yazma Bölümü - Mobile Responsive */}
-      <div className="mt-10 mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
-          📝 Mesaj Yazma
-        </h2>
-      
-        <div className="bg-white dark:text-black p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border space-y-4">
-          {/* İsim Girişi */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 ">
-              İsminizi girin (Adınız ve Soyadınız):
-            </label>
-            <input
-              type="text"
-              value={noteAuthor}
-              onChange={(e) => setNoteAuthor(e.target.value)}
-              placeholder="Örn: Ahmet Yılmaz"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-              maxLength={50}
-              autoComplete="off"
-              spellCheck="false"
-            />
-            {noteAuthor.trim() && !isValidName(noteAuthor) && (
-              <p className="text-xs text-orange-600">
-                ⚠️ Lütfen adınızı ve soyadınızı tam olarak girin
-              </p>
-            )}
-            {isValidName(noteAuthor) && (
-              <p className="text-xs text-green-600">
-                ✅ İsim bilgisi uygun
-              </p>
-            )}
-          </div>
-      
-          {/* Mesaj Yazma Alanı */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 ">
-              Mesajınızı yazın:
-            </label>
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              placeholder="Düğün için güzel dileklerinizi, anılarınızı veya mesajınızı buraya yazabilirsiniz..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base resize-none"
-              rows={4}
-              maxLength={1000}
-            />
-            <div className="flex justify-between items-center text-xs text-gray-500 ">
-              <span>Maksimum 1000 karakter</span>
-              <span>{noteText.length}/1000</span>
+        {/* Birleştirilmiş Mesaj Yazma ve Ses Kaydı Bölümü - Mobile Responsive */}
+        <div className="mt-2 mb-2 md:mb-5 w-full max-w-sm sm:max-w-md md:max-w-lg">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
+            💌 Mesaj Gönder
+          </h2>      
+          
+          {/* Ana Kart - Tek Arka Plan */}
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border space-y-6">
+            
+            {/* Seçenek Butonları */}
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setActiveTab('text')}
+                className={`flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 ${
+                  activeTab === 'text' 
+                    ? 'bg-white text-purple-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                📝 Metin Mesajı
+              </button>
+              <button
+                onClick={() => setActiveTab('voice')}
+                className={`flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 ${
+                  activeTab === 'voice' 
+                    ? 'bg-white text-red-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                🎤 Ses Kaydı
+              </button>
             </div>
-          </div>
-      
-          {/* Gönder Butonu */}
-          <button
-            onClick={uploadNote}
-            disabled={isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(noteAuthor)}
-            className={`w-full py-2.5 md:py-3 px-3 md:px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
-              isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(noteAuthor)
-                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "bg-purple-600 hover:bg-purple-700 text-white"
-            }`}
-          >
-            {(isUploadingNote || noteUploadThingUploading) ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                <span className="hidden sm:inline">Gönderiliyor...</span>
-                <span className="sm:hidden">Gönderiliyor</span>
-              </>
-            ) : (
-              <>
-                <span>📤</span>
-                <span className="hidden sm:inline">Mesajı Gönder</span>
-                <span className="sm:hidden">Gönder</span>
-              </>
+        
+            {/* Metin Mesajı Bölümü */}
+            {activeTab === 'text' && (
+              <div className="space-y-4 dark:text-black">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mesajınızı yazın:
+                  </label>
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    placeholder="Düğün için güzel dileklerinizi, anılarınızı veya mesajınızı buraya yazabilirsiniz..."
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base resize-none"
+                    rows={5}
+                    maxLength={1000}
+                  />
+                  <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
+                    <span>Maksimum 1000 karakter</span>
+                    <span className={noteText.length > 900 ? 'text-orange-500 font-medium' : ''}>
+                      {noteText.length}/1000
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Metin Gönder Butonu */}
+                <button
+                  onClick={uploadNote}
+                  disabled={isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(userName)}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
+                    isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(userName)
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                  }`}
+                >
+                  {(isUploadingNote || noteUploadThingUploading) ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      <span>Gönderiliyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>📤</span>
+                      <span>Mesajı Gönder</span>
+                    </>
+                  )}
+                </button>
+              </div>
             )}
-          </button>
+        
+            {/* Ses Kaydı Bölümü */}
+            {activeTab === 'voice' && (
+              <div className="space-y-4">
+                {!audioBlob ? (
+                  <div className="text-center space-y-4">
+                    {!isRecording ? (
+                      <>
+                        <div className="bg-red-50 p-4 rounded-lg mb-4">
+                          <p className="text-sm text-gray-600 mb-2">
+                            🎙️ Sesli mesajınızı kaydetmek için butona basın
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Maksimum 5 dakika kayıt yapabilirsiniz
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleStartRecording}
+                          className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-full transition-all duration-200 flex items-center justify-center mx-auto gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
+                        >
+                          <span className="text-2xl">🎤</span> 
+                          <span>Kayıt Başlat</span>
+                        </button>
+                      </>
+                    ) : (
+                      <div className="bg-red-50 p-6 rounded-lg space-y-4">
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="text-xl font-mono text-red-600 font-bold">
+                            {formatTime(recordingTime)}
+                          </span>
+                        </div>
+                        <p className="text-base text-red-700 font-medium">
+                          🎙️ Kayıt devam ediyor...
+                        </p>
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={stopRecording}
+                            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
+                          >
+                            ⏹️ Kayıt Durdur
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-green-50 p-4 rounded-lg text-center">
+                      <p className="text-green-700 font-medium mb-1">
+                        {isConverting ? "🔄 Ses dönüştürülüyor..." : "✅ Kayıt tamamlandı!"}
+                      </p>
+                      <p className="text-sm text-green-600">
+                        Süre: {formatTime(recordingTime)} • Format: WAV
+                        {userName.trim() && ` • Kayıt sahibi: ${userName}`}
+                      </p>
+                    </div>
+        
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <audio 
+                        controls 
+                        className="w-full mb-4" 
+                        src={audioUrl ?? undefined}
+                        style={{height: '40px'}}
+                      >
+                        Tarayıcınız ses oynatmayı desteklemiyor.
+                      </audio>
+                    </div>
+        
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <button
+                        onClick={uploadAudio}
+                        disabled={isUploading || audioUploadThingUploading || isConverting || !isValidName(userName)}
+                        className={`flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                          isUploading || audioUploadThingUploading || isConverting || !isValidName(userName) 
+                            ? "opacity-50 cursor-not-allowed" 
+                            : "shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                        }`}
+                      >
+                        {(isUploading || audioUploadThingUploading) ? (
+                          <>
+                            <span className="animate-spin">⏳</span> 
+                            <span>Yükleniyor...</span>
+                          </>
+                        ) : isConverting ? (
+                          <>
+                            <span className="animate-spin">🔄</span> 
+                            <span>Dönüştürülüyor...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>⬆️</span> 
+                            <span>Ses Yükle</span>
+                          </>
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={deleteRecording}
+                        className="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                      >
+                        🗑️ Yeni Kayıt
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </main>
-  );
+      </main>
+    );
 }
