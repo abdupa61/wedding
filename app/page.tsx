@@ -128,6 +128,15 @@ export default function Home() {
     }
   }, [showFileSuccess]);
 
+  useEffect(() => {
+    if (showNoteSuccess) {
+      const timer = setTimeout(() => {
+        setShowNoteSuccess(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showNoteSuccess]);
+  
   // Component unmount cleanup
   useEffect(() => {
     return () => {
@@ -408,6 +417,7 @@ export default function Home() {
 
   // Kayıt başlatma - buton her zaman aktif
   const handleStartRecording = () => {
+    stopMusic();
     startRecording();
   };
 
