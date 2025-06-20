@@ -38,7 +38,8 @@ export default function Home() {
   // Ses kaydı için isim state'i eklendi
   const [recordingName, setRecordingName] = useState("");
   const [showNameInput, setShowNameInput] = useState(false);
-  
+  const [userStoppedMusic, setUserStoppedMusic] = useState(false);
+
   // Dosya seçimi için state'ler
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -63,7 +64,7 @@ export default function Home() {
       console.log("🎵 Müzik dosyası hazır");
       audio.volume = 0.3;
       
-      if (userInteracted) {
+      if (userInteracted && !userStoppedMusic) {
         audio.play()
           .then(() => {
             console.log("🎵 Müzik başlatıldı");
@@ -84,7 +85,7 @@ export default function Home() {
     return () => {
       audio.removeEventListener('canplay', handleCanPlay);
     };
-  }, [userInteracted]);
+  }, [userInteracted, userStoppedMusic]);
   
   // Kullanıcı etkileşimi takibi
   useEffect(() => {
@@ -92,7 +93,7 @@ export default function Home() {
       setUserInteracted(true);
       
       const audio = audioRef.current;
-      if (audio && !musicPlaying) {
+      if (audio && !musicPlaying && !userStoppedMusic) {
         audio.play()
           .then(() => {
             console.log("🎵 İlk etkileşim sonrası müzik başlatıldı");
@@ -115,16 +116,7 @@ export default function Home() {
         document.removeEventListener(event, handleFirstInteraction);
       });
     };
-  }, [musicPlaying]);
-  
-  useEffect(() => {
-    if (showNoteSuccess) {
-      const timer = setTimeout(() => {
-        setShowNoteSuccess(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showNoteSuccess]);
+  }, [musicPlaying, userStoppedMusic]);
 
   // Başarı mesajlarını otomatik gizleme
   useEffect(() => {
@@ -198,6 +190,7 @@ export default function Home() {
           setMusicPlaying(true);
           setShowMusicButton(false);
           setUserInteracted(true);
+          setUserStoppedMusic(false); // Müzik tekrar başlatıldığında bu flag'i sıfırla
         })
         .catch(console.error);
     }
@@ -208,6 +201,7 @@ export default function Home() {
     if (audio) {
       audio.pause();
       setMusicPlaying(false);
+      setUserStoppedMusic(true); // Kullanıcının müziği durdurduğunu işaretle
     }
   };
 
@@ -638,19 +632,31 @@ export default function Home() {
       )}
       
       {/* Müzik Kontrol Paneli */}
-      {musicPlaying && (
+      {(musicPlaying || userStoppedMusic) && userInteracted && (
         <div className="fixed bottom-4 left-4 z-50 bg-white bg-opacity-90 backdrop-blur-sm border border-gray-200 px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-green-500 animate-pulse">🎵</span>
-            <span className="text-sm font-medium text-gray-700">Müzik çalıyor</span>
+            <span className={musicPlaying ? "text-green-500 animate-pulse" : "text-gray-500"}>🎵</span>
+            <span className="text-sm font-medium text-gray-700">
+              {musicPlaying ? "Müzik çalıyor" : "Müzik durdu"}
+            </span>
           </div>
-          <button
-            onClick={stopMusic}
-            className="text-gray-500 hover:text-red-500 transition-colors"
-            title="Müziği durdur"
-          >
-            ⏸️
-          </button>
+          {musicPlaying ? (
+            <button
+              onClick={stopMusic}
+              className="text-gray-500 hover:text-red-500 transition-colors"
+              title="Müziği durdur"
+            >
+              ⏸️
+            </button>
+          ) : (
+            <button
+              onClick={startMusic}
+              className="text-gray-500 hover:text-green-500 transition-colors"
+              title="Müziği başlat"
+            >
+              ▶️
+            </button>
+          )}
         </div>
       )}
       {/* Başarı Mesajları - Fixed pozisyon */}
@@ -677,14 +683,14 @@ export default function Home() {
 
       {/* Başlık - Responsive */}
       <div className="text-center max-w-4xl overflow-x-auto">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font text-gray-900 mb-4 md:mb-2 italic whitespace-nowrap inline-block">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font text-gray-900 dark:text-white mb-4 md:mb-2 italic whitespace-nowrap inline-block">
           Abdulsamet & Zehra Nurcan
         </h1>
-      </div>
+	  </div>
       {/* Geri Sayım */}
       <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
 		<div className="mb-1 md:mb-1 w-full max-w-sm sm:max-w-md md:max-w-lg">  
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
             👰🤵 Düğüne Kalan Süre
           </h2>
 		</div>
@@ -697,7 +703,7 @@ export default function Home() {
               <div className="text-lg font-bold">{timeLeft.days}</div>
               <div className="text-xs">Gün</div>
             </div>
-            <div className="bg-gray-200 rounded-lg p-1">
+            <div className="bg-gray-200  rounded-lg p-1">
               <div className="text-lg font-bold">{timeLeft.hours}</div>
               <div className="text-xs">Saat</div>
             </div>
@@ -714,14 +720,14 @@ export default function Home() {
       </div>
 	  {/* Konum Bilgisi Bölümü */}
       <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">  
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
           📍 Düğün Salonu Konumu
         </h2>
         
         <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border text-center">
           <div className="mb-4">
             <h3 className="font-semibold text-lg text-gray-800 mb-2">{weddingLocation.name}</h3>
-            <p className="text-gray-600 text-sm">{weddingLocation.address}</p>
+            <p className="text-gray-600  text-sm">{weddingLocation.address}</p>
           </div>
           
           <button
@@ -734,14 +740,14 @@ export default function Home() {
         </div>
 	  </div>
       <div className="mb-8 md:mb-2 text-center max-w-5xl">
- 	    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 px-4">
+ 	    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-white px-4">
           Bu özel günümüzde çektiğiniz güzel anıları ve içten dileklerinizi bizimle paylaşabilirsiniz
         </p>
       </div>
       {/* Fotoğraf/Video Yükleme - Mobile Responsive */}
       <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
 
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
           📸 Fotoğraf ve Video Yükleme
         </h2>
         
@@ -793,7 +799,7 @@ export default function Home() {
         {/* Seçilen Dosyalar Listesi - Mobile Responsive */}
           {selectedFiles.length > 0 && (
             <div className="mt-3 md:mt-4 space-y-2">
-              <h3 className="font-semibold text-gray-700 text-sm sm:text-base">Seçilen Dosyalar:</h3>
+              <h3 className="font-semibold text-gray-700 dark:text-white text-sm sm:text-base">Seçilen Dosyalar:</h3>
               <div className="max-h-32 sm:max-h-80 overflow-y-auto grid grid-cols-3 gap-2">
                 {selectedFiles.map((file, index) => (
                   <div key={index} className="bg-white border rounded-lg p-2 space-y-2">
@@ -855,14 +861,14 @@ export default function Home() {
 
       {/* Ses Kayıt Bölümü - Mobile Responsive */}
       <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
           🎤 Ses Kaydı
         </h2>
 
         <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border">
           {/* İsim Girişi - Her zaman göster */}
           <div className="mb-4 space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 ">
               İsminizi girin (Adınız ve Soyadınız):
             </label>
             <input
@@ -904,7 +910,7 @@ export default function Home() {
                     <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-red-500 rounded-full animate-pulse"></div>
                     <span className="text-base md:text-lg font-mono text-red-600">{formatTime(recordingTime)}</span>
                   </div>
-                  <p className="text-sm text-gray-600">🎙️ Kayıt devam ediyor...</p>
+                  <p className="text-sm text-gray-600 ">🎙️ Kayıt devam ediyor...</p>
                   <button
                     onClick={stopRecording}
                     className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 md:py-3 px-4 md:px-6 rounded-full transition-colors duration-200 text-sm sm:text-base"
@@ -920,7 +926,7 @@ export default function Home() {
                 <p className="text-gray-600 mb-1 md:mb-2 text-sm sm:text-base">
                   {isConverting ? "🔄 Ses dönüştürülüyor..." : "Kayıt tamamlandı!"}
                 </p>
-                <p className="text-xs sm:text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500 ">
                   Süre: {formatTime(recordingTime)} • Format: WAV
                   {recordingName.trim() && ` • Kayıt sahibi: ${recordingName}`}
                 </p>
@@ -971,14 +977,14 @@ export default function Home() {
       </div>
 	  {/* Not/Mesaj Yazma Bölümü - Mobile Responsive */}
       <div className="mt-10 mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
           📝 Mesaj Yazma
         </h2>
       
         <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border space-y-4">
           {/* İsim Girişi */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 ">
               İsminizi girin (Adınız ve Soyadınız):
             </label>
             <input
@@ -1005,7 +1011,7 @@ export default function Home() {
       
           {/* Mesaj Yazma Alanı */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 ">
               Mesajınızı yazın:
             </label>
             <textarea
@@ -1016,7 +1022,7 @@ export default function Home() {
               rows={4}
               maxLength={1000}
             />
-            <div className="flex justify-between items-center text-xs text-gray-500">
+            <div className="flex justify-between items-center text-xs text-gray-500 ">
               <span>Maksimum 1000 karakter</span>
               <span>{noteText.length}/1000</span>
             </div>
