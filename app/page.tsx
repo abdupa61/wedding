@@ -370,7 +370,7 @@ export default function Home() {
     }
     
     if (!isValidName(userName)) {
-      owNotification("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)", "error");
+      showNotification("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)", "error");
       return;
     }
 	
