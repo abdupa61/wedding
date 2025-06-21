@@ -19,15 +19,13 @@ export async function GET() {
         files = filesResponse;
       } else if (filesResponse.files && Array.isArray(filesResponse.files)) {
         files = filesResponse.files;
-      } else if (filesResponse.data && Array.isArray(filesResponse.data)) {
-        files = filesResponse.data;
       } else {
         console.log('📋 Unexpected response structure:', Object.keys(filesResponse));
         // Eğer response bir obje ise ve içinde dosya bilgileri varsa
         const responseKeys = Object.keys(filesResponse);
         for (const key of responseKeys) {
-          if (Array.isArray(filesResponse[key])) {
-            files = filesResponse[key];
+          if (Array.isArray((filesResponse as any)[key])) {
+            files = (filesResponse as any)[key];
             console.log('📋 Files found in key:', key);
             break;
           }
