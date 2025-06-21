@@ -326,7 +326,7 @@ export default function Home() {
       
     } catch (error) {
       console.error("❌ Katılımcı ekleme hatası:", error);
-      alert("Katılımcı eklenirken hata oluştu!");
+	  showNotification("Katılımcı eklenirken hata oluştu!", "error");
       setParticipants(prev => prev.filter(p => p !== name.trim()));
       return false;
     } finally {
