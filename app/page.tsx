@@ -376,9 +376,9 @@ export default function Home() {
 	
     try {
       // Dosya adını isim ve tarih ile oluştur
-      const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
+      const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '_');
       const timestamp = new Date().toLocaleString('tr-TR').replace(/[/:]/g, '-').replace(/\s/g, '_');
-      const fileName = `not-${sanitizedName}-${timestamp}.txt`;
+      const fileName = `${sanitizedName}_f_Not${timestamp}.txt`;
       
       // Not içeriğini oluştur
       const noteContent = `Gönderen: ${userName}\nTarih: ${new Date().toLocaleString('tr-TR')}\n\nMesaj:\n${noteText}`;
@@ -800,9 +800,9 @@ export default function Home() {
 	
     try {
       // Dosya adını isim ve tarih ile oluştur
-      const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '-');
+      const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '_');
       const timestamp = new Date().toLocaleString('tr-TR').replace(/[/:]/g, '-').replace(/\s/g, '_');
-      const fileName = `ses-kaydi-${sanitizedName}-${timestamp}.wav`;
+      const fileName = `${sanitizedName}_f_Ses_Kaydı${timestamp}.wav`;
       
       const audioFile = new File([blobToUpload], fileName, {
         type: "audio/wav",
