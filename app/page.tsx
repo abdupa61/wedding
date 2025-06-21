@@ -270,46 +270,44 @@ export default function Home() {
       // 6. Yeni dosyayı yükle ve sonucunu bekle
       console.log('📤 Yeni katılımcı dosyası yükleniyor...');
       
-      return new Promise((resolve) => {
-        // Upload tamamlandığında çalışacak callback
-        const originalOnComplete = startParticipantUpload.onClientUploadComplete;
+      try {
+        await startParticipantUpload([jsonFile]);
         
-        startParticipantUpload([jsonFile]).then(() => {
-          // Upload başarılı olduktan sonra eski dosyayı sil
-          if (existingFileKey) {
-            setTimeout(async () => {
-              try {
-                console.log('🗑️ Eski dosya siliniyor:', existingFileKey);
-                
-                const deleteResponse = await fetch('/api/delete-file', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ fileKey: existingFileKey }),
-                });
-                
-                const deleteResult = await deleteResponse.json();
-                if (deleteResponse.ok && deleteResult.success) {
-                  console.log('🗑️ Eski dosya başarıyla silindi');
-                } else {
-                  console.warn('🗑️ Eski dosya silinemedi:', deleteResult);
-                }
-              } catch (error) {
-                console.warn("🗑️ Eski dosya silme hatası:", error);
+        // Upload başarılı olduktan sonra eski dosyayı sil
+        if (existingFileKey) {
+          setTimeout(async () => {
+            try {
+              console.log('🗑️ Eski dosya siliniyor:', existingFileKey);
+              
+              const deleteResponse = await fetch('/api/delete-file', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ fileKey: existingFileKey }),
+              });
+              
+              const deleteResult = await deleteResponse.json();
+              if (deleteResponse.ok && deleteResult.success) {
+                console.log('🗑️ Eski dosya başarıyla silindi');
+              } else {
+                console.warn('🗑️ Eski dosya silinemedi:', deleteResult);
               }
-            }, 3000); // 3 saniye bekle
-          }
-          
-          console.log('✅ Katılımcı başarıyla eklendi:', trimmedName);
-          resolve(true);
-        }).catch((error) => {
-          console.error("❌ Katılımcı ekleme hatası:", error);
-          alert("Katılımcı eklenirken hata oluştu!");
-          setParticipants(prev => prev.filter(p => p !== trimmedName));
-          resolve(false);
-        });
-      });
+            } catch (error) {
+              console.warn("🗑️ Eski dosya silme hatası:", error);
+            }
+          }, 3000); // 3 saniye bekle
+        }
+        
+        console.log('✅ Katılımcı başarıyla eklendi:', trimmedName);
+        return true;
+        
+      } catch (error) {
+        console.error("❌ Katılımcı yükleme hatası:", error);
+        alert("Katılımcı eklenirken hata oluştu!");
+        setParticipants(prev => prev.filter(p => p !== trimmedName));
+        return false;
+      }
       
     } catch (error) {
       console.error("❌ Katılımcı ekleme hatası:", error);
