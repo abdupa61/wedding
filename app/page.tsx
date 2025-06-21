@@ -15,12 +15,24 @@ export default function Home() {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showLocationSection, setShowLocationSection] = useState(false);
+  const [fileUrls, setFileUrls] = useState<Map<File, string>>(new Map());
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
     minutes: 0,
     seconds: 0
   });
+  
+  // Notification sistemi için state'ler
+  const [notifications, setNotifications] = useState<{
+    id: number;
+    message: string;
+    type: 'success' | 'error';
+    show: boolean;
+  }[]>([]);
+  
+  // Notification ID counter
+  const notificationIdRef = useRef(0);
   const [participants, setParticipants] = useState<string[]>([]);
   const [isAddingParticipant, setIsAddingParticipant] = useState(false);
   const [activeTab, setActiveTab] = useState('text'); // 'text' veya 'voice'
@@ -33,10 +45,7 @@ export default function Home() {
   // Wedding date - useMemo ile stable hale getir
   const weddingDate = useMemo(() => new Date('2025-08-30T16:00:00'), []);
   
-  // Başarı mesajları için state'ler
-  const [showFileSuccess, setShowFileSuccess] = useState(false);
-  const [showAudioSuccess, setShowAudioSuccess] = useState(false);
-  
+
   // Ses kaydı için isim state'i eklendi
   const [userName, setUserName] = useState("");
   const [userStoppedMusic, setUserStoppedMusic] = useState(false);
@@ -54,7 +63,6 @@ export default function Home() {
   const [noteText, setNoteText] = useState("");
   const [noteAuthor, setNoteAuthor] = useState("");
   const [isUploadingNote, setIsUploadingNote] = useState(false);
-  const [showNoteSuccess, setShowNoteSuccess] = useState(false);
 
   // Müzik kontrolü
   useEffect(() => {
@@ -88,6 +96,41 @@ export default function Home() {
     };
   }, [userInteracted, userStoppedMusic]);
   
+  // Notification gösterme fonksiyonu
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    const id = ++notificationIdRef.current;
+    const newNotification = { id, message, type, show: true };
+    
+    setNotifications(prev => [...prev, newNotification]);
+    
+    // 5 saniye sonra notification'ı gizle
+    setTimeout(() => {
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, show: false } : notif
+        )
+      );
+      
+      // 500ms sonra tamamen kaldır (animasyon için)
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(notif => notif.id !== id));
+      }, 500);
+    }, 5000);
+  };
+  
+  // Notification kapatma fonksiyonu
+  const dismissNotification = (id: number) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === id ? { ...notif, show: false } : notif
+      )
+    );
+    
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(notif => notif.id !== id));
+    }, 500);
+  };
+
   // Kullanıcı etkileşimi takibi
   useEffect(() => {
     const handleFirstInteraction = () => {
@@ -119,25 +162,6 @@ export default function Home() {
     };
   }, [musicPlaying, userStoppedMusic]);
 
-  // Başarı mesajlarını otomatik gizleme
-  useEffect(() => {
-    if (showFileSuccess) {
-      const timer = setTimeout(() => {
-        setShowFileSuccess(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showFileSuccess]);
-
-  useEffect(() => {
-    if (showNoteSuccess) {
-      const timer = setTimeout(() => {
-        setShowNoteSuccess(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showNoteSuccess]);
-  
   // Component unmount cleanup
   useEffect(() => {
     return () => {
@@ -168,15 +192,6 @@ export default function Home() {
     };
   loadExistingParticipants();
   }, []);
-  
-  useEffect(() => {
-    if (showAudioSuccess) {
-      const timer = setTimeout(() => {
-        setShowAudioSuccess(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showAudioSuccess]);
 
   // Otomatik müzik başlatma
   useEffect(() => {
@@ -244,7 +259,7 @@ export default function Home() {
       // 2. Aynı isim zaten var mı kontrol et
       const trimmedName = name.trim();
       if (existingParticipants.includes(trimmedName)) {
-        alert("Bu isim zaten katılımcı listesinde mevcut!");
+        showNotification("Bu isim zaten katılımcı listesinde mevcut!", "error");
         return false;
       }
       
@@ -304,7 +319,7 @@ export default function Home() {
         
       } catch (error) {
         console.error("❌ Katılımcı yükleme hatası:", error);
-        alert("Katılımcı eklenirken hata oluştu!");
+        showNotification("Katılımcı eklenirken hata oluştu!", "error");
         setParticipants(prev => prev.filter(p => p !== trimmedName));
         return false;
       }
@@ -350,16 +365,14 @@ export default function Home() {
 
   const uploadNote = async () => {
     if (!noteText.trim()) {
-      alert("Lütfen bir mesaj yazın!");
+      showNotification("Lütfen bir mesaj yazın!", "error");
       return;
     }
     
     if (!isValidName(userName)) {
-      alert("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)");
+      owNotification("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)", "error");
       return;
     }
-  
-    await addParticipant(userName);
 	
     try {
       // Dosya adını isim ve tarih ile oluştur
@@ -377,7 +390,7 @@ export default function Home() {
       await startNoteUpload([noteFile]);
     } catch (error: any) {
       console.error("❌ Not yükleme hatası:", error);
-      alert(`Not yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`);
+      showNotification(`Not yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`, "error");
       setIsUploadingNote(false);
     }
   };
@@ -423,7 +436,7 @@ export default function Home() {
     },
     onUploadError: (error: Error) => {
       console.error("❌ Katılımcı listesi yükleme hatası:", error);
-      alert(`Katılımcı listesi yükleme hatası: ${error.message}`);
+      showNotification(`Katılımcı listesi yükleme hatası: ${error.message}`, "error");
       // Hata durumunda son eklenen katılımcıyı state'ten kaldır
       setParticipants(prev => {
         const newList = [...prev];
@@ -440,18 +453,25 @@ export default function Home() {
   const { startUpload, isUploading: uploadThingUploading } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res: any[]) => {
       console.log("✅ Dosya yükleme tamamlandı:", res);
+      
+      // URL'leri temizle
+      fileUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      setFileUrls(new Map());
+      
       setSelectedFiles([]);
       setIsUploadingFile(false);
       setUploadProgress(0);
-      setShowFileSuccess(true); // Başarı mesajını göster
-      // File input'u da temizle
+      showNotification("Dosyalar başarıyla gönderildi!", "success"); 
+      
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     },
     onUploadError: (error: Error) => {
       console.error("❌ Dosya yükleme hatası:", error);
-      alert(`Yükleme hatası: ${error.message}`);
+      showNotification(`Yükleme hatası: ${error.message}`, "error");
       setIsUploadingFile(false);
       setUploadProgress(0);
     },
@@ -470,11 +490,11 @@ export default function Home() {
       console.log("✅ Not yükleme tamamlandı:", res);
       setNoteText("");
       setIsUploadingNote(false);
-      setShowNoteSuccess(true);
+      showNotification("Mesajınız başarıyla gönderildi!", "success");
     },
     onUploadError: (error: Error) => {
       console.error("❌ Not yükleme hatası:", error);
-      alert(`Yükleme hatası: ${error.message}`);
+      showNotification(`Yükleme hatası: ${error.message}`, "error");
       setIsUploadingNote(false);
     },
     onUploadBegin: (name: string) => {
@@ -491,11 +511,11 @@ export default function Home() {
       setConvertedBlob(null);
       setRecordingTime(0);
       setIsUploading(false);
-      setShowAudioSuccess(true); // Başarı mesajını göster
+      showNotification("Ses kaydı başarıyla gönderildi!", "success");  // Başarı mesajını göster
     },
     onUploadError: (error: Error) => {
       console.error("❌ Ses yükleme hatası:", error);
-      alert(`Yükleme hatası: ${error.message}`);
+      showNotification(`Yükleme hatası: ${error.message}`, "error");
       setIsUploading(false);
     },
     onUploadBegin: (name: string) => {
@@ -510,8 +530,16 @@ export default function Home() {
     if (files) {
       const fileArray = Array.from(files);
       setSelectedFiles(prev => [...prev, ...fileArray]);
+      
+      // Yeni dosyalar için URL'ler oluştur
+      fileArray.forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const url = URL.createObjectURL(file);
+          setFileUrls(prev => new Map(prev).set(file, url));
+        }
+      });
     }
-    // Input'u temizle ki aynı dosya tekrar seçilebilsin
+    
     if (event.target) {
       event.target.value = '';
     }
@@ -530,13 +558,13 @@ export default function Home() {
   // 5. Alternatif: Manuel katılımcı ekleme butonu
   const handleAddParticipant = async () => {
     if (!isValidName(userName)) {
-      alert("Lütfen geçerli bir isim girin!");
+      showNotification("Lütfen geçerli bir isim girin!", "error");
       return;
     }
     
     const success = await addParticipant(userName);
     if (success) {
-      alert("Katılımcı listesine eklendi!");
+      showNotification("Katılımcı listesine eklendi!", "success");
     }
   };
   
@@ -548,21 +576,57 @@ export default function Home() {
     if (files) {
       const fileArray = Array.from(files);
       setSelectedFiles(prev => [...prev, ...fileArray]);
+      
+      // Yeni dosyalar için URL'ler oluştur
+      fileArray.forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const url = URL.createObjectURL(file);
+          setFileUrls(prev => new Map(prev).set(file, url));
+        }
+      });
     }
   };
 
   const removeFile = (index: number) => {
+    const fileToRemove = selectedFiles[index];
+    
+    // URL'i temizle
+    const url = fileUrls.get(fileToRemove);
+    if (url) {
+      URL.revokeObjectURL(url);
+      setFileUrls(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(fileToRemove);
+        return newMap;
+      });
+    }
+    
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const uploadFiles = async () => {
     if (selectedFiles.length === 0) return;
+    
     try {
       setIsUploadingFile(true);
-      await startUpload(selectedFiles);
+      
+      // Dosya adlarını formatla
+      const renamedFiles = selectedFiles.map(file => {
+        const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '_');
+        const fileExtension = file.name.split('.').pop();
+        const originalFileName = file.name.replace(`.${fileExtension}`, '');
+        const newFileName = `${sanitizedName}_f_${originalFileName}.${fileExtension}`;
+        
+        return new File([file], newFileName, {
+          type: file.type,
+          lastModified: file.lastModified,
+        });
+      });
+      
+      await startUpload(renamedFiles);
     } catch (error: any) {
       console.error("❌ Dosya yükleme hatası:", error);
-      alert(`Dosya yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`);
+      showNotification(`Dosya yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`, "error");
       setIsUploadingFile(false);
       setUploadProgress(0);
     }
@@ -632,7 +696,8 @@ export default function Home() {
       }, 1000);
     } catch (error) {
       console.error("Mikrofon erişimi hatası:", error);
-      alert("Mikrofon erişimi sağlanamadı. Lütfen tarayıcı ayarlarınızı kontrol edin.");
+      showNotification("Mikrofon erişimi sağlanamadı. Lütfen tarayıcı ayarlarınızı kontrol edin.", "error");
+
     }
   };
 
@@ -729,7 +794,7 @@ export default function Home() {
 
     // İsim kontrolü sadece yükleme sırasında yapılacak
     if (!isValidName(userName)) {
-      alert("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)");
+      showNotification("Lütfen adınızı ve soyadınızı tam olarak girin! (Örn: Ahmet Yılmaz)", "error");
       return;
     }
 	
@@ -746,7 +811,7 @@ export default function Home() {
       await startAudioUpload([audioFile]);
     } catch (error: any) {
       console.error("❌ Ses yükleme hatası:", error);
-      alert(`Ses yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`);
+      showNotification(`Ses yükleme sırasında hata oluştu: ${error.message || "Bilinmeyen hata"}`, "error");
       setIsUploading(false);
     }
   };
@@ -771,6 +836,16 @@ export default function Home() {
     return null;
   }, [convertedBlob, audioBlob]);
 
+
+  // Component unmount'ta URL'leri temizle
+  useEffect(() => {
+    return () => {
+      fileUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, [fileUrls]);
+  
   // Audio URL cleanup - sadece component unmount'ta çalışır
   useEffect(() => {
     return () => {
@@ -837,27 +912,58 @@ export default function Home() {
           </div>
         )}
         
-        {/* Başarı Mesajları - Fixed pozisyon */}
-        {showFileSuccess && (
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
-            <span className="text-lg">✅</span>
-            <span className="font-semibold">Dosyalar başarıyla gönderildi!</span>
+        {/* Notification Container */}
+        <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+          <div className="flex flex-col items-center pt-4 px-4 space-y-2">
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`
+                  max-w-md w-full pointer-events-auto transform transition-all duration-500 ease-in-out
+                  ${notification.show 
+                    ? 'translate-y-0 opacity-100 scale-100' 
+                    : '-translate-y-full opacity-0 scale-95'
+                  }
+                  ${notification.type === 'success' 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-red-500 text-white'
+                  }
+                  rounded-lg shadow-lg p-4 flex items-center justify-between
+                `}
+              >
+                <div className="flex items-center space-x-3">
+                  {/* Icon */}
+                  <div className="flex-shrink-0">
+                    {notification.type === 'success' ? (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </div>
+                  
+                  {/* Message */}
+                  <p className="text-sm font-medium">
+                    {notification.message}
+                  </p>
+                </div>
+                
+                {/* Close Button */}
+                <button
+                  onClick={() => dismissNotification(notification.id)}
+                  className="flex-shrink-0 ml-4 text-white hover:text-gray-200 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
           </div>
-        )}
-        
-        {showNoteSuccess && (
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
-            <span className="text-lg">📝</span>
-            <span className="font-semibold">Mesajınız başarıyla gönderildi!</span>
-          </div>
-        )}
-  
-        {showAudioSuccess && (
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
-            <span className="text-lg">🎤</span>
-            <span className="font-semibold">Ses kaydı başarıyla gönderildi!</span>
-          </div>
-        )}
+        </div>
   
         {/* Başlık - Responsive */}
         <div className="text-center max-w-4xl overflow-x-auto">
@@ -952,21 +1058,15 @@ export default function Home() {
                   ⚠️ Lütfen adınızı ve soyadınızı tam olarak girin
                 </p>
               )}
-              {isValidName(userName) && (
-                <p className="text-xs text-green-600">
-                  ✅ İsim bilgisi uygun
-                </p>
-              )}
-			  {/* Mevcut input alanından sonra, validation mesajlarından sonra ekle */}
-              {isValidName(userName) && (
+                {/* Mevcut input alanından sonra, validation mesajlarından sonra ekle */}
                 <button
                   onClick={handleAddParticipant}
-                  disabled={isAddingParticipant || participantUploadThingUploading}
-                  className={`w-full py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
-                    isAddingParticipant || participantUploadThingUploading
-                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
-                  }`}
+                  disabled={!isValidName(userName) || isAddingParticipant || participantUploadThingUploading}
+                    className={`py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm mx-auto ${
+                      !isValidName(userName) || isAddingParticipant || participantUploadThingUploading
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200"
+                        : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
+                    }`}
                 >
                   {isAddingParticipant || participantUploadThingUploading ? (
                     <>
@@ -975,12 +1075,11 @@ export default function Home() {
                     </>
                   ) : (
                     <>
-                      <span>✅</span>
-                      <span>Check-in Yap</span>
+					  <span>✅</span>
+                      <span>{!isValidName(userName) ? "İsminizi Giriniz" : "Check-In Yap"}</span>
                     </>
                   )}
                 </button>
-              )}
             </div>
           </div>
         </div>
@@ -1043,15 +1142,15 @@ export default function Home() {
               <div className="max-h-32 sm:max-h-80 overflow-y-auto grid grid-cols-3 gap-2">
                 {selectedFiles.map((file, index) => (
                   <div key={index} className="bg-white border rounded-lg p-2 space-y-2">
-                    {file.type.startsWith('image/') && (
-                      <div className="relative w-full h-20">
-                        <Image 
-                          src={URL.createObjectURL(file)} 
-                          alt={file.name}
-                          fill
-                          className="object-cover rounded-lg"
-                          sizes="(max-width: 768px) 33vw, 25vw"
-                        />
+                   {file.type.startsWith('image/') && (
+                     <div className="relative w-full h-20">
+                       <Image 
+                         src={fileUrls.get(file) || ''} // Map'ten URL al
+                         alt={file.name}
+                         fill
+                         className="object-cover rounded-lg"
+                         sizes="(max-width: 768px) 33vw, 25vw"
+                       />
                       </div>
                     )}
                     <div className="flex items-center justify-between">
@@ -1073,9 +1172,17 @@ export default function Home() {
               {/* Yükle Butonu - Mobile Responsive */}
               <button
                 onClick={uploadFiles}
-                disabled={isUploadingFile || uploadThingUploading || selectedFiles.length === 0}
+                disabled={
+                  isUploadingFile || 
+                  uploadThingUploading || 
+                  selectedFiles.length === 0 || 
+                  !isValidName(userName)  // İsim geçerli değilse buton deaktif
+                }
                 className={`w-full py-2.5 md:py-3 px-3 md:px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
-                  isUploadingFile || uploadThingUploading || selectedFiles.length === 0
+                  isUploadingFile || 
+                  uploadThingUploading || 
+                  selectedFiles.length === 0 || 
+                  !isValidName(userName)  // İsim geçerli değilse gri renk
                     ? "bg-gray-400 text-gray-600 cursor-not-allowed"
                     : "bg-green-600 hover:bg-green-700 text-white"
                 }`}
@@ -1090,8 +1197,18 @@ export default function Home() {
                 ) : (
                   <>
                     <span>⬆️</span>
-                    <span className="hidden sm:inline">{selectedFiles.length} Dosyayı Yükle</span>
-                    <span className="sm:hidden">{selectedFiles.length} Dosya Yükle</span>
+                    <span className="hidden sm:inline">
+                      {!isValidName(userName) 
+                        ? "İsiminizi Giriniz" 
+                        : `${selectedFiles.length} Dosyayı Yükle`
+                      }
+                    </span>
+                    <span className="sm:hidden">
+                      {!isValidName(userName) 
+                        ? "İsminizi Giriniz" 
+                        : `${selectedFiles.length} Dosya Yükle`
+                      }
+                    </span>
                   </>
                 )}
               </button>
@@ -1105,10 +1222,10 @@ export default function Home() {
           </h2>      
           
           {/* Ana Kart - Tek Arka Plan */}
-          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border space-y-6">
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border">
             
             {/* Seçenek Butonları */}
-            <div className="flex bg-gray-100 p-1 rounded-lg">
+            <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
               <button
                 onClick={() => setActiveTab('text')}
                 className={`flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 ${
@@ -1130,158 +1247,212 @@ export default function Home() {
                 🎤 Ses Kaydı
               </button>
             </div>
-        
+
             {/* Metin Mesajı Bölümü */}
             {activeTab === 'text' && (
-              <div className="space-y-4 dark:text-black">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mesajınızı yazın:
-                  </label>
-                  <textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Düğün için güzel dileklerinizi, anılarınızı veya mesajınızı buraya yazabilirsiniz..."
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base resize-none"
-                    rows={5}
-                    maxLength={1000}
-                  />
-                  <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
-                    <span>Maksimum 1000 karakter</span>
-                    <span className={noteText.length > 900 ? 'text-orange-500 font-medium' : ''}>
-                      {noteText.length}/1000
-                    </span>
+              <div className="min-h-[400px] flex flex-col">
+                {/* Başlık ve Açıklama */}
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Metin Mesajı</h3>
+                  <p className="text-gray-600 text-sm">
+                    Düğün için güzel dileklerinizi yazın.<br/>
+                    Maksimum 1000 karakter kullanabilirsiniz.
+                  </p>
+                </div>
+
+                {/* İçerik Alanı */}
+                <div className="flex-1 flex flex-col justify-center">
+                  <div className="space-y-4 dark:text-black">
+                    <div>
+                      <textarea
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        placeholder="Düğün için güzel dileklerinizi, anılarınızı veya mesajınızı buraya yazabilirsiniz..."
+                        className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base resize-none shadow-sm"
+                        rows={6}
+                        maxLength={1000}
+                      />
+                      <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+                        <span>Maksimum 1000 karakter</span>
+                        <span className={noteText.length > 900 ? 'text-orange-500 font-medium' : ''}>
+                          {noteText.length}/1000
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                {/* Metin Gönder Butonu */}
-                <button
-                  onClick={uploadNote}
-                  disabled={isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(userName)}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base ${
-                    isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(userName)
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                  }`}
-                >
-                  {(isUploadingNote || noteUploadThingUploading) ? (
-                    <>
-                      <span className="animate-spin">⏳</span>
-                      <span>Gönderiliyor...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>📤</span>
-                      <span>Mesajı Gönder</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-        
-            {/* Ses Kaydı Bölümü */}
-            {activeTab === 'voice' && (
-              <div className="space-y-4">
-                {!audioBlob ? (
-                  <div className="text-center space-y-4">
-                    {!isRecording ? (
+
+                {/* Gönder Butonu */}
+                <div className="mt-6">
+                  <button
+                    onClick={uploadNote}
+                    disabled={isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(userName)}
+                    className={`w-full py-4 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-3 text-base shadow-lg ${
+                      isUploadingNote || noteUploadThingUploading || !noteText.trim() || !isValidName(userName)
+                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-xl transform active:scale-95"
+                    }`}
+                  >
+                    {(isUploadingNote || noteUploadThingUploading) ? (
                       <>
-                        <div className="bg-red-50 p-4 rounded-lg mb-4">
-                          <p className="text-sm text-gray-600 mb-2">
-                            🎙️ Sesli mesajınızı kaydetmek için butona basın
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Maksimum 5 dakika kayıt yapabilirsiniz
-                          </p>
-                        </div>
-                        <button
-                          onClick={handleStartRecording}
-                          className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-full transition-all duration-200 flex items-center justify-center mx-auto gap-3 text-base shadow-lg hover:shadow-xl transform hover:scale-105"
-                        >
-                          <span className="text-2xl">🎤</span> 
-                          <span>Kayıt Başlat</span>
-                        </button>
+                        <span className="animate-spin text-xl">⏳</span>
+                        <span>Gönderiliyor...</span>
                       </>
                     ) : (
-                      <div className="bg-red-50 p-6 rounded-lg space-y-4">
-                        <div className="flex items-center justify-center gap-3">
-                          <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
-                          <span className="text-xl font-mono text-red-600 font-bold">
-                            {formatTime(recordingTime)}
-                          </span>
-                        </div>
-                        <p className="text-base text-red-700 font-medium">
-                          🎙️ Kayıt devam ediyor...
-                        </p>
-                        <div className="flex justify-center gap-3">
-                          <button
-                            onClick={stopRecording}
-                            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
-                          >
-                            ⏹️ Kayıt Durdur
-                          </button>
-                        </div>
-                      </div>
+                      <>
+                        <span className="text-xl">📤</span>
+                        <span>
+                          {!isValidName(userName) 
+                            ? "İsiminizi Giriniz" 
+                            : "Mesajı Gönder"
+                          }
+                        </span>
+                      </>
                     )}
-                  </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Ses Kaydı Bölümü */}
+            {activeTab === 'voice' && (
+              <div className="min-h-[400px] flex flex-col">
+                
+                {!audioBlob ? (
+                  // Kayıt Öncesi Durumu
+                  <>
+                    {/* Başlık ve Açıklama */}
+                    <div className="text-center mb-6">
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">Sesli Mesaj</h3>
+                      <p className="text-gray-600 text-sm">
+                        Düşüncelerinizi sesli olarak paylaşın.<br/>
+                        Maksimum 5 dakika kayıt yapabilirsiniz.
+                      </p>
+                    </div>
+
+                    {/* İçerik Alanı */}
+                    <div className="flex-1 flex flex-col justify-center items-center">
+                      {!isRecording ? (
+                        <div className="text-center">
+                          <div className="bg-gray-50 rounded-xl p-8 border border-gray-200 mb-6">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <span className="text-2xl text-gray-400">🎙️</span>
+                            </div>
+                            <p className="text-gray-600 text-sm">
+                              Kayda başlamak için butona basın
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full max-w-xs">
+                          <div className="bg-red-50 rounded-xl p-6 border border-red-200 text-center">
+                            <div className="flex items-center justify-center gap-3 mb-3">
+                              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                              <span className="text-2xl font-mono text-red-700 font-bold">
+                                {formatTime(recordingTime)}
+                              </span>
+                            </div>
+                            <p className="text-red-700 font-medium text-sm">
+                              Kayıt devam ediyor...
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Kayıt Butonu */}
+                    <div className="mt-6">
+                      {!isRecording ? (
+                        <button
+                          onClick={handleStartRecording}
+                          className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95"
+                        >
+                          <span className="text-xl">🎙️</span>
+                          <span>Kayda Başla</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={stopRecording}
+                          className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95"
+                        >
+                          <span className="text-xl">⏹️</span>
+                          <span>Kaydı Durdur</span>
+                        </button>
+                      )}
+                    </div>
+                  </>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="bg-green-50 p-4 rounded-lg text-center">
-                      <p className="text-green-700 font-medium mb-1">
-                        {isConverting ? "🔄 Ses dönüştürülüyor..." : "✅ Kayıt tamamlandı!"}
-                      </p>
-                      <p className="text-sm text-green-600">
-                        Süre: {formatTime(recordingTime)} {userName.trim() && ` • Kayıt sahibi: ${userName}`}
+                  // Kayıt Sonrası Durumu
+                  <>
+                    {/* Başlık ve Açıklama */}
+                    <div className="text-center mb-6">
+                      <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <span className="text-3xl text-white">✓</span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        {isConverting ? "İşleniyor..." : "Kayıt Hazır!"}
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        Süre: {formatTime(recordingTime)}
+                        {userName.trim() && (
+                          <span className="block mt-1">Kayıt: {userName}</span>
+                        )}
                       </p>
                     </div>
-        
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <audio 
-                        controls 
-                        className="w-full mb-4" 
-                        src={audioUrl ?? undefined}
-                        style={{height: '40px'}}
-                      >
-                        Tarayıcınız ses oynatmayı desteklemiyor.
-                      </audio>
+
+                    {/* İçerik Alanı - Ses Oynatıcı */}
+                    <div className="flex-1 flex flex-col justify-center">
+                      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                        <audio 
+                          controls 
+                          className="w-full" 
+                          src={audioUrl ?? undefined}
+                          style={{height: '44px'}}
+                        >
+                          Tarayıcınız ses oynatmayı desteklemiyor.
+                        </audio>
+                      </div>
                     </div>
-        
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+
+                    {/* Butonlar */}
+                    <div className="flex gap-3 mt-6">
                       <button
                         onClick={uploadAudio}
                         disabled={isUploading || audioUploadThingUploading || isConverting || !isValidName(userName)}
-                        className={`flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                        className={`flex-1 font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg ${
                           isUploading || audioUploadThingUploading || isConverting || !isValidName(userName) 
-                            ? "opacity-50 cursor-not-allowed" 
-                            : "shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
+                            : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-xl transform active:scale-95"
                         }`}
                       >
                         {(isUploading || audioUploadThingUploading) ? (
                           <>
-                            <span className="animate-spin">⏳</span> 
-                            <span>Yükleniyor...</span>
+                            <span className="animate-spin text-xl">⏳</span>
+                            <span>Yükleniyor</span>
                           </>
                         ) : isConverting ? (
                           <>
-                            <span className="animate-spin">🔄</span> 
-                            <span>Dönüştürülüyor...</span>
+                            <span className="animate-spin text-xl">🔄</span>
+                            <span>İşleniyor</span>
                           </>
                         ) : (
                           <>
-                            <span>⬆️</span> 
-                            <span>Ses Yükle</span>
+                            <span className="text-xl">📤</span>
+                            <span>
+                              {!isValidName(userName) ? "İsminizi Giriniz" : "Kaydı Yükle"}
+                            </span>
                           </>
                         )}
                       </button>
                       
                       <button
                         onClick={deleteRecording}
-                        className="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                        className="bg-red-500 hover:bg-red-600 text-gray-600 hover:text-red-600 font-semibold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md transform  active:scale-95 border border-gray-200 hover:border-red-200"
                       >
-                        🗑️ Yeni Kayıt
+                        <span className="text-xl">🗑️</span>
                       </button>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             )}
