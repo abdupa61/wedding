@@ -206,7 +206,7 @@ export default function Home() {
     };
   }, []);
 
-  // 2. Katılımcı ekleme fonksiyonu - Güvenli versiyon
+  // Geliştirilmiş addParticipant fonksiyonu
   const addParticipant = async (name: string) => {
     if (!isValidName(name)) {
       return false;
@@ -221,7 +221,16 @@ export default function Home() {
       
       try {
         console.log('📋 Mevcut katılımcı listesi getiriliyor...');
-        const response = await fetch('/api/get-participants');
+        // Cache'i bypass etmek için timestamp ekle
+        const cacheBuster = new Date().getTime();
+        const response = await fetch(`/api/get-participants?t=${cacheBuster}`, {
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        });
+        
         if (response.ok) {
           const data = await response.json();
           existingParticipants = data.participants || [];
@@ -258,47 +267,53 @@ export default function Home() {
       // 5. State'i güncelle (UI'da göstermek için)
       setParticipants(updatedParticipants);
       
-      // 6. ÖNCE yeni dosyayı yükle
+      // 6. Yeni dosyayı yükle ve sonucunu bekle
       console.log('📤 Yeni katılımcı dosyası yükleniyor...');
-      await startParticipantUpload([jsonFile]);
       
-      // 7. Yeni dosya yüklendikten SONRA eski dosyayı sil
-      if (existingFileKey) {
-        try {
-          console.log('🗑️ Eski dosya siliniyor:', existingFileKey);
-          
-          // Yeni dosyanın tamamen yüklendiğinden emin olmak için kısa bir bekleme
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          const deleteResponse = await fetch('/api/delete-file', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ fileKey: existingFileKey }),
-          });
-          
-          const deleteResult = await deleteResponse.json();
-          if (deleteResponse.ok && deleteResult.success) {
-            console.log('🗑️ Eski dosya başarıyla silindi');
-          } else {
-            console.warn('🗑️ Eski dosya silinemedi:', deleteResult);
-            // Eski dosya silinemese bile işlem başarılı sayılır
+      return new Promise((resolve) => {
+        // Upload tamamlandığında çalışacak callback
+        const originalOnComplete = startParticipantUpload.onClientUploadComplete;
+        
+        startParticipantUpload([jsonFile]).then(() => {
+          // Upload başarılı olduktan sonra eski dosyayı sil
+          if (existingFileKey) {
+            setTimeout(async () => {
+              try {
+                console.log('🗑️ Eski dosya siliniyor:', existingFileKey);
+                
+                const deleteResponse = await fetch('/api/delete-file', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ fileKey: existingFileKey }),
+                });
+                
+                const deleteResult = await deleteResponse.json();
+                if (deleteResponse.ok && deleteResult.success) {
+                  console.log('🗑️ Eski dosya başarıyla silindi');
+                } else {
+                  console.warn('🗑️ Eski dosya silinemedi:', deleteResult);
+                }
+              } catch (error) {
+                console.warn("🗑️ Eski dosya silme hatası:", error);
+              }
+            }, 3000); // 3 saniye bekle
           }
-        } catch (error) {
-          console.warn("🗑️ Eski dosya silme hatası:", error);
-          // Eski dosya silme hatası kritik değil, işlem devam eder
-        }
-      }
-      
-      console.log('✅ Katılımcı başarıyla eklendi:', trimmedName);
-      return true;
+          
+          console.log('✅ Katılımcı başarıyla eklendi:', trimmedName);
+          resolve(true);
+        }).catch((error) => {
+          console.error("❌ Katılımcı ekleme hatası:", error);
+          alert("Katılımcı eklenirken hata oluştu!");
+          setParticipants(prev => prev.filter(p => p !== trimmedName));
+          resolve(false);
+        });
+      });
       
     } catch (error) {
       console.error("❌ Katılımcı ekleme hatası:", error);
       alert("Katılımcı eklenirken hata oluştu!");
-      
-      // Hata durumunda state'i geri al
       setParticipants(prev => prev.filter(p => p !== name.trim()));
       return false;
     } finally {
