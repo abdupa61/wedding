@@ -126,8 +126,8 @@ export default function Home() {
   };
   
   // Google Calendar URL oluşturma fonksiyonu
-  const createGoogleCalendarUrl = (title, startDate, endDate, location, description) => {
-    const formatGoogleDate = (date) => {
+  const createGoogleCalendarUrl = (title: string, startDate: Date, endDate: Date, location: string, description: string): string => {
+    const formatGoogleDate = (date: Date): string => {
       return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     };
   
@@ -169,9 +169,10 @@ export default function Home() {
     showNotification("Google Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
   };
   
+  
   // Outlook Calendar URL oluşturma fonksiyonu
-  const createOutlookCalendarUrl = (title, startDate, endDate, location, description) => {
-    const formatOutlookDate = (date) => {
+  const createOutlookCalendarUrl = (title: string, startDate: Date, endDate: Date, location: string, description: string): string => {
+    const formatOutlookDate = (date: Date): string => {
       return date.toISOString();
     };
   
@@ -214,6 +215,8 @@ export default function Home() {
     window.open(url, '_blank');
     showNotification("Outlook Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
   };
+
+
 
 
   // Tarih formatını ICS formatına çevir
