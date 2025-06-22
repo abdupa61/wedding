@@ -662,7 +662,7 @@ export default function Home() {
       return;
     }
     
-    const success = await addParticipant(userName);
+    const success = await addParticipant(userName.toLowerCase());
     if (success) {
       showNotification("Katılımcı listesine eklendi!", "success");
     }
