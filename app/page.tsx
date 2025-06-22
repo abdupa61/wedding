@@ -3,6 +3,12 @@ import { useUploadThing } from "@/src/utils/uploadthing";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Image from 'next/image';
+import { 
+  createGoogleCalendarUrl, 
+  downloadICSFile, 
+  createOutlookCalendarUrl, 
+  detectDevice 
+} from '../src/utils/calendar-utils';
 
 export default function Home() {
   const router = useRouter();
@@ -16,6 +22,7 @@ export default function Home() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showLocationSection, setShowLocationSection] = useState(false);
   const [fileUrls, setFileUrls] = useState<Map<File, string>>(new Map());
+  const [showCalendarOptions, setShowCalendarOptions] = useState(false);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -118,6 +125,99 @@ export default function Home() {
     }, 5000);
   };
   
+  // Tarih formatını ICS formatına çevir
+  const formatDateForICS = (date: Date): string => {
+    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  };
+
+  // Takvim ekleme fonksiyonları
+  const addToGoogleCalendar = () => {
+    const title = "Abdulsamet & Zehra Nurcan Düğünü";
+    const startDate = new Date('2025-08-30T16:00:00');
+    const endDate = new Date('2025-08-30T23:00:00'); // 7 saat süreceğini varsayıyoruz
+    const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
+    const description = `Sevgili ${userName || 'Dostumuz'},
+  
+  Abdulsamet & Zehra Nurcan'ın düğün törenine davetlisiniz!
+  
+  📅 Tarih: 30 Ağustos 2025
+  🕐 Saat: 16:00
+  📍 Mekan: ${location}
+  
+  Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
+  
+  Hatırlatma: Etkinlikten 1 gün önce ve 2 saat önce bildirim alacaksınız.
+  
+  Sevgiler,
+  Abdulsamet & Zehra Nurcan`;
+  
+    const url = createGoogleCalendarUrl(title, startDate, endDate, location, description);
+    window.open(url, '_blank');
+    showNotification("Google Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
+  };
+  
+  const addToAppleCalendar = () => {
+    const title = "Abdulsamet & Zehra Nurcan Düğünü";
+    const startDate = new Date('2025-08-30T16:00:00');
+    const endDate = new Date('2025-08-30T23:00:00');
+    const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
+    const description = `Sevgili ${userName || 'Dostumuz'},
+  
+  Abdulsamet & Zehra Nurcan'ın düğün törenine davetlisiniz!
+  
+  📅 Tarih: 30 Ağustos 2025
+  🕐 Saat: 16:00
+  📍 Mekan: ${location}
+  
+  Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
+  
+  Hatırlatma: Etkinlikten 1 gün önce saat 10:00'da ve 2 saat önce bildirim alacaksınız.
+  
+  Sevgiler,
+  Abdulsamet & Zehra Nurcan`;
+  
+    downloadICSFile(title, startDate, endDate, location, description);
+    showNotification("Takvim dosyası indirildi! Dosyayı açarak takviminize ekleyebilirsiniz.", "success");
+  };
+  
+  const addToOutlookCalendar = () => {
+    const title = "Abdulsamet & Zehra Nurcan Düğünü";
+    const startDate = new Date('2025-08-30T16:00:00');
+    const endDate = new Date('2025-08-30T23:00:00');
+    const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
+    const description = `Sevgili ${userName || 'Dostumuz'},
+  
+  Abdulsamet & Zehra Nurcan'ın düğün törenine davetlisiniz!
+  
+  📅 Tarih: 30 Ağustos 2025
+  🕐 Saat: 16:00
+  📍 Mekan: ${location}
+  
+  Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
+  
+  Hatırlatma: Etkinlikten 1 gün önce ve 2 saat önce bildirim alacaksınız.
+  
+  Sevgiler,
+  Abdulsamet & Zehra Nurcan`;
+  
+    const url = createOutlookCalendarUrl(title, startDate, endDate, location, description);
+    window.open(url, '_blank');
+    showNotification("Outlook Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
+  };
+  
+  const handleAddToCalendar = () => {
+    const device = detectDevice();
+    
+    if (device === 'ios') {
+      addToAppleCalendar();
+    } else if (device === 'android') {
+      addToGoogleCalendar();
+    } else {
+      // Desktop için seçenekler göster
+      setShowCalendarOptions(true);
+    }
+  };
+
   // Notification kapatma fonksiyonu
   const dismissNotification = (id: number) => {
     setNotifications(prev => 
@@ -1006,32 +1106,99 @@ export default function Home() {
         
         {/* Konum Bilgisi Bölümü */}
         <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">  
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
-            📍 Düğün Salonu Konumu
-          </h2>
-          
-          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border text-center">
-            <div className="mb-4">
-              <h3 className="font-semibold text-lg text-gray-800 mb-2">{weddingLocation.name}</h3>
-              <p className="text-gray-600  text-sm">{weddingLocation.address}</p>
-            </div>
-            
-            <button
-              onClick={openInMaps}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center mx-auto gap-2"
-            >
-              <span>🗺️</span>
-              <span>Haritada Göster</span>
-            </button>
-          </div>
+         <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
+           📍 Düğün Salonu Konumu
+         </h2>
+         
+         <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border text-center">
+           <div className="mb-4">
+             <h3 className="font-semibold text-lg text-gray-800 mb-2">{weddingLocation.name}</h3>
+             <p className="text-gray-600 text-sm">{weddingLocation.address}</p>
+           </div>
+           
+           <div className="flex flex-col gap-3 items-center">
+             <button
+               onClick={openInMaps}
+               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+             >
+               <span>🗺️</span>
+               <span>Haritada Göster</span>
+             </button>
+             
+             <button
+               onClick={handleAddToCalendar}
+               className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+             >
+               <span>📅</span>
+               <span>Takvime Ekle</span>
+             </button>
+           </div>
+         </div>
         </div>
         
         <div className="mb-8 md:mb-2 text-center max-w-5xl">
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-white px-4">
-            Bu özel günümüzde çektiğiniz güzel anıları ve içten dileklerinizi bizimle paylaşabilirsiniz
-          </p>
+         <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-white px-4">
+           Bu özel günümüzde çektiğiniz güzel anıları ve içten dileklerinizi bizimle paylaşabilirsiniz
+         </p>
         </div>
-        
+        {/* Takvim Seçenekleri Modal'ı */}
+        {showCalendarOptions && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-sm w-full p-6 space-y-4">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  📅 Takvime Ekle
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Hangi takvim uygulamasını kullanmak istiyorsunuz?
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    addToGoogleCalendar();
+                    setShowCalendarOptions(false);
+                  }}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                >
+                  <span>📅</span>
+                  <span>Google Takvim</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    addToOutlookCalendar();
+                    setShowCalendarOptions(false);
+                  }}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                >
+                  <span>📅</span>
+                  <span>Outlook Takvim</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    addToAppleCalendar();
+                    setShowCalendarOptions(false);
+                  }}
+                  className="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                >
+                  <span>📅</span>
+                  <span>Apple Takvim (.ics)</span>
+                </button>
+              </div>
+              
+              <button
+                onClick={() => setShowCalendarOptions(false)}
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+              >
+                İptal
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* İsim Girişi Bölümü */}
         <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
@@ -1041,13 +1208,13 @@ export default function Home() {
           <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border dark:text-black">
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">
-                İsminizi girin (Adınız ve Soyadınız):
+                Bu mutlu günü bizimle paylaşacaksanız lütfen bildirin 💕
               </label>
               <input
                 type="text"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                placeholder="Örn: Ahmet Yılmaz"
+                placeholder="Adınız ve Soyadınız"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 maxLength={50}
                 autoComplete="off"
