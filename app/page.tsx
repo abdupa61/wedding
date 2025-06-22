@@ -1422,7 +1422,7 @@ export default function Home() {
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">Metin Mesajı</h3>
                   <p className="text-gray-600 text-sm">
-                    Düğün için güzel dileklerinizi yazın.<br/>
+                    Düşüncelerinizi metin olarak paylaşın.<br/>
                     Maksimum 1000 karakter kullanabilirsiniz.
                   </p>
                 </div>
