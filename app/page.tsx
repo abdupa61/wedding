@@ -125,24 +125,11 @@ export default function Home() {
     }, 5000);
   };
   
-  // Google Calendar URL oluşturma fonksiyonu
-  const createGoogleCalendarUrl = (title: string, startDate: Date, endDate: Date, location: string, description: string): string => {
-    const formatGoogleDate = (date: Date): string => {
-      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    };
-  
-    const params = new URLSearchParams({
-      action: 'TEMPLATE',
-      text: title,
-      dates: `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`,
-      location: location,
-      details: description,
-      remind: '1440' // 1440 dakika = 1 gün önce
-    });
-  
-    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  // Tarih formatını ICS formatına çevir
+  const formatDateForICS = (date: Date): string => {
+    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   };
-  
+
   // Takvim ekleme fonksiyonları
   const addToGoogleCalendar = () => {
     const title = "Abdulsamet & Zehra Nurcan Düğünü";
@@ -159,7 +146,7 @@ export default function Home() {
   
   Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
   
-  Hatırlatma: Etkinlikten 1 gün önce bildirim alacaksınız.
+  Hatırlatma: Etkinlikten önce bildirim alacaksınız.
   
   Sevgiler,
   Abdulsamet & Zehra Nurcan`;
@@ -167,61 +154,6 @@ export default function Home() {
     const url = createGoogleCalendarUrl(title, startDate, endDate, location, description);
     window.open(url, '_blank');
     showNotification("Google Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
-  };
-  
-  
-  // Outlook Calendar URL oluşturma fonksiyonu
-  const createOutlookCalendarUrl = (title: string, startDate: Date, endDate: Date, location: string, description: string): string => {
-    const formatOutlookDate = (date: Date): string => {
-      return date.toISOString();
-    };
-  
-    const params = new URLSearchParams({
-      subject: title,
-      startdt: formatOutlookDate(startDate),
-      enddt: formatOutlookDate(endDate),
-      location: location,
-      body: description,
-      allday: 'false',
-      uid: Date.now().toString(),
-      rru: 'addevent',
-      remindertime: '1440' // 1440 dakika = 1 gün önce
-    });
-  
-    return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
-  };
-  
-  const addToOutlookCalendar = () => {
-    const title = "Abdulsamet & Zehra Nurcan Düğünü";
-    const startDate = new Date('2025-08-30T16:00:00');
-    const endDate = new Date('2025-08-30T18:00:00');
-    const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
-    const description = `Sevgili ${userName || 'Dostumuz'},
-  
-  Abdulsamet & Zehra Nurcan'ın düğün törenine davetlisiniz!
-  
-  📅 Tarih: 30 Ağustos 2025
-  🕐 Saat: 16:00
-  📍 Mekan: ${location}
-  
-  Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
-  
-  Hatırlatma: Etkinlikten 1 gün önce bildirim alacaksınız.
-  
-  Sevgiler,
-  Abdulsamet & Zehra Nurcan`;
-  
-    const url = createOutlookCalendarUrl(title, startDate, endDate, location, description);
-    window.open(url, '_blank');
-    showNotification("Outlook Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
-  };
-
-
-
-
-  // Tarih formatını ICS formatına çevir
-  const formatDateForICS = (date: Date): string => {
-    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   };
   
   const addToAppleCalendar = () => {
@@ -247,7 +179,32 @@ export default function Home() {
     downloadICSFile(title, startDate, endDate, location, description);
     showNotification("Takvim dosyası indirildi! Dosyayı açarak takviminize ekleyebilirsiniz.", "success");
   };
- 
+  
+  const addToOutlookCalendar = () => {
+    const title = "Abdulsamet & Zehra Nurcan Düğünü";
+    const startDate = new Date('2025-08-30T16:00:00');
+    const endDate = new Date('2025-08-30T18:00:00');
+    const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
+    const description = `Sevgili ${userName || 'Dostumuz'},
+  
+  Abdulsamet & Zehra Nurcan'ın düğün törenine davetlisiniz!
+  
+  📅 Tarih: 30 Ağustos 2025
+  🕐 Saat: 16:00
+  📍 Mekan: ${location}
+  
+  Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
+  
+  Hatırlatma: Etkinlikten 1 gün önce ve 2 saat önce bildirim alacaksınız.
+  
+  Sevgiler,
+  Abdulsamet & Zehra Nurcan`;
+  
+    const url = createOutlookCalendarUrl(title, startDate, endDate, location, description);
+    window.open(url, '_blank');
+    showNotification("Outlook Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
+  };
+  
   const handleAddToCalendar = () => {
     const device = detectDevice();
     
