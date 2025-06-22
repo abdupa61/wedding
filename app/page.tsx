@@ -1103,7 +1103,59 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
+		
+		{/* İsim Girişi Bölümü */}
+        <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
+            👤 İsim Bilgisi
+          </h2>
+          
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border dark:text-black">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Bu mutlu günü bizimle paylaşacaksanız lütfen bildirin 💕
+              </label>
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Adınız ve Soyadınız"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                maxLength={50}
+                autoComplete="off"
+                spellCheck="false"
+              />
+              {userName.trim() && !isValidName(userName) && (
+                <p className="text-xs text-orange-600">
+                  ⚠️ Lütfen adınızı ve soyadınızı tam olarak girin
+                </p>
+              )}
+                {/* Mevcut input alanından sonra, validation mesajlarından sonra ekle */}
+                <button
+                  onClick={handleAddParticipant}
+                  disabled={!isValidName(userName) || isAddingParticipant || participantUploadThingUploading}
+                    className={`py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm mx-auto ${
+                      !isValidName(userName) || isAddingParticipant || participantUploadThingUploading
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200"
+                        : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
+                    }`}
+                >
+                  {isAddingParticipant || participantUploadThingUploading ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      <span>Check-in yapılıyor...</span>
+                    </>
+                  ) : (
+                    <>
+					  <span>✅</span>
+                      <span>{!isValidName(userName) ? "İsminizi Giriniz" : "Check-In Yap"}</span>
+                    </>
+                  )}
+                </button>
+            </div>
+          </div>
+        </div>
+		
         {/* Konum Bilgisi Bölümü */}
         <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">  
          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
@@ -1198,58 +1250,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        {/* İsim Girişi Bölümü */}
-        <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-white mb-3 md:mb-4 text-center">
-            👤 İsim Bilgisi
-          </h2>
-          
-          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-lg border dark:text-black">
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Bu mutlu günü bizimle paylaşacaksanız lütfen bildirin 💕
-              </label>
-              <input
-                type="text"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                placeholder="Adınız ve Soyadınız"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                maxLength={50}
-                autoComplete="off"
-                spellCheck="false"
-              />
-              {userName.trim() && !isValidName(userName) && (
-                <p className="text-xs text-orange-600">
-                  ⚠️ Lütfen adınızı ve soyadınızı tam olarak girin
-                </p>
-              )}
-                {/* Mevcut input alanından sonra, validation mesajlarından sonra ekle */}
-                <button
-                  onClick={handleAddParticipant}
-                  disabled={!isValidName(userName) || isAddingParticipant || participantUploadThingUploading}
-                    className={`py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm mx-auto ${
-                      !isValidName(userName) || isAddingParticipant || participantUploadThingUploading
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200"
-                        : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
-                    }`}
-                >
-                  {isAddingParticipant || participantUploadThingUploading ? (
-                    <>
-                      <span className="animate-spin">⏳</span>
-                      <span>Check-in yapılıyor...</span>
-                    </>
-                  ) : (
-                    <>
-					  <span>✅</span>
-                      <span>{!isValidName(userName) ? "İsminizi Giriniz" : "Check-In Yap"}</span>
-                    </>
-                  )}
-                </button>
-            </div>
-          </div>
-        </div>
         
         {/* Fotoğraf/Video Yükleme - Mobile Responsive */}
         <div className="mb-6 md:mb-8 w-full max-w-sm sm:max-w-md md:max-w-lg">
