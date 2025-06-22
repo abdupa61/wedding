@@ -134,7 +134,7 @@ export default function Home() {
   const addToGoogleCalendar = () => {
     const title = "Abdulsamet & Zehra Nurcan Düğünü";
     const startDate = new Date('2025-08-30T16:00:00');
-    const endDate = new Date('2025-08-30T23:00:00'); // 7 saat süreceğini varsayıyoruz
+    const endDate = new Date('2025-08-30T18:00:00'); 
     const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
     const description = `Sevgili ${userName || 'Dostumuz'},
   
@@ -146,7 +146,7 @@ export default function Home() {
   
   Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
   
-  Hatırlatma: Etkinlikten 1 gün önce ve 2 saat önce bildirim alacaksınız.
+  Hatırlatma: Etkinlikten önce bildirim alacaksınız.
   
   Sevgiler,
   Abdulsamet & Zehra Nurcan`;
@@ -159,7 +159,7 @@ export default function Home() {
   const addToAppleCalendar = () => {
     const title = "Abdulsamet & Zehra Nurcan Düğünü";
     const startDate = new Date('2025-08-30T16:00:00');
-    const endDate = new Date('2025-08-30T23:00:00');
+    const endDate = new Date('2025-08-30T18:00:00');
     const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
     const description = `Sevgili ${userName || 'Dostumuz'},
   
@@ -183,7 +183,7 @@ export default function Home() {
   const addToOutlookCalendar = () => {
     const title = "Abdulsamet & Zehra Nurcan Düğünü";
     const startDate = new Date('2025-08-30T16:00:00');
-    const endDate = new Date('2025-08-30T23:00:00');
+    const endDate = new Date('2025-08-30T18:00:00');
     const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
     const description = `Sevgili ${userName || 'Dostumuz'},
   
