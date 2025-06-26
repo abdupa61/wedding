@@ -130,77 +130,51 @@ export default function Home() {
     return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   };
 
-  // Takvim ekleme fonksiyonları
-  const addToGoogleCalendar = () => {
-    const title = "Abdulsamet & Zehra Nurcan Düğünü";
-    const startDate = new Date('2025-08-30T16:00:00');
-    const endDate = new Date('2025-08-30T18:00:00'); 
-    const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
-    const description = `Sevgili ${userName || 'Dostumuz'},
+  // Etkinlik bilgileri (.env dosyasından)
+  const eventData = {
+    title: process.env.NEXT_PUBLIC_EVENT_TITLE || "Düğün Töreni",
+    groomName: process.env.NEXT_PUBLIC_GROOM_NAME || "Damat",
+    brideName: process.env.NEXT_PUBLIC_BRIDE_NAME || "Gelin",
+    startDate: new Date(process.env.NEXT_PUBLIC_EVENT_START_DATE || '2025-08-30T16:00:00'),
+    endDate: new Date(process.env.NEXT_PUBLIC_EVENT_END_DATE || '2025-08-30T18:00:00'),
+    location: process.env.NEXT_PUBLIC_EVENT_LOCATION || "Etkinlik Mekanı"
+  };
   
-  Abdulsamet & Zehra Nurcan'ın düğün törenine davetlisiniz!
+  // Açıklama metni oluşturma fonksiyonu
+  const createDescription = (reminderText = "") => {
+    return `Sevgili ${userName || 'Dostumuz'},
+  
+  ${eventData.groomName} & ${eventData.brideName}'ın düğün törenine davetlisiniz!
   
   📅 Tarih: 30 Ağustos 2025
   🕐 Saat: 16:00
-  📍 Mekan: ${location}
+  📍 Mekan: ${eventData.location}
   
   Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
   
-  Hatırlatma: Etkinlikten önce bildirim alacaksınız.
+  ${reminderText}
   
   Sevgiler,
-  Abdulsamet & Zehra Nurcan`;
+  ${eventData.groomName} & ${eventData.brideName}`;
+  };
   
-    const url = createGoogleCalendarUrl(title, startDate, endDate, location, description);
+  // Takvim ekleme fonksiyonları
+  const addToGoogleCalendar = () => {
+    const description = createDescription("Hatırlatma: Etkinlikten önce bildirim alacaksınız.");
+    const url = createGoogleCalendarUrl(eventData.title, eventData.startDate, eventData.endDate, eventData.location, description);
     window.open(url, '_blank');
     showNotification("Google Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
   };
   
   const addToAppleCalendar = () => {
-    const title = "Abdulsamet & Zehra Nurcan Düğünü";
-    const startDate = new Date('2025-08-30T16:00:00');
-    const endDate = new Date('2025-08-30T18:00:00');
-    const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
-    const description = `Sevgili ${userName || 'Dostumuz'},
-  
-  Abdulsamet & Zehra Nurcan'ın düğün törenine davetlisiniz!
-  
-  📅 Tarih: 30 Ağustos 2025
-  🕐 Saat: 16:00
-  📍 Mekan: ${location}
-  
-  Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
-  
-  Hatırlatma: Etkinlikten 1 gün önce saat 10:00'da ve 2 saat önce bildirim alacaksınız.
-  
-  Sevgiler,
-  Abdulsamet & Zehra Nurcan`;
-  
-    downloadICSFile(title, startDate, endDate, location, description);
+    const description = createDescription("Hatırlatma: Etkinlikten 1 gün önce saat 10:00'da ve 2 saat önce bildirim alacaksınız.");
+    downloadICSFile(eventData.title, eventData.startDate, eventData.endDate, eventData.location, description);
     showNotification("Takvim dosyası indirildi! Dosyayı açarak takviminize ekleyebilirsiniz.", "success");
   };
   
   const addToOutlookCalendar = () => {
-    const title = "Abdulsamet & Zehra Nurcan Düğünü";
-    const startDate = new Date('2025-08-30T16:00:00');
-    const endDate = new Date('2025-08-30T18:00:00');
-    const location = "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon";
-    const description = `Sevgili ${userName || 'Dostumuz'},
-  
-  Abdulsamet & Zehra Nurcan'ın düğün törenine davetlisiniz!
-  
-  📅 Tarih: 30 Ağustos 2025
-  🕐 Saat: 16:00
-  📍 Mekan: ${location}
-  
-  Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
-  
-  Hatırlatma: Etkinlikten 1 gün önce ve 2 saat önce bildirim alacaksınız.
-  
-  Sevgiler,
-  Abdulsamet & Zehra Nurcan`;
-  
-    const url = createOutlookCalendarUrl(title, startDate, endDate, location, description);
+    const description = createDescription("Hatırlatma: Etkinlikten 1 gün önce ve 2 saat önce bildirim alacaksınız.");
+    const url = createOutlookCalendarUrl(eventData.title, eventData.startDate, eventData.endDate, eventData.location, description);
     window.open(url, '_blank');
     showNotification("Outlook Takvim açıldı! Etkinliği kaydetmeyi unutmayın.", "success");
   };
@@ -1068,7 +1042,7 @@ export default function Home() {
         {/* Başlık - Responsive */}
         <div className="text-center max-w-4xl overflow-x-auto">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font text-gray-900 dark:text-white mb-4 md:mb-2 italic whitespace-nowrap inline-block">
-            Abdulsamet & Zehra Nurcan
+            {eventData.groomName} & {eventData.brideName}
           </h1>
         </div>
         
