@@ -137,17 +137,29 @@ export default function Home() {
     brideName: process.env.NEXT_PUBLIC_BRIDE_NAME || "Gelin",
     startDate: new Date(process.env.NEXT_PUBLIC_EVENT_START_DATE || '2025-08-30T16:00:00'),
     endDate: new Date(process.env.NEXT_PUBLIC_EVENT_END_DATE || '2025-08-30T18:00:00'),
-    location: process.env.NEXT_PUBLIC_EVENT_LOCATION || "Etkinlik Mekanı"
+    location: process.env.NEXT_PUBLIC_EVENT_LOCATION || "Etkinlik Mekanı",
+    locationName: process.env.NEXT_PUBLIC_EVENT_LOCATION_NAME || "Etkinlik Alanı"
   };
   
   // Açıklama metni oluşturma fonksiyonu
   const createDescription = (reminderText = "") => {
+    const formattedDate = eventData.startDate.toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    
+    const formattedTime = eventData.startDate.toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  
     return `Sevgili ${userName || 'Dostumuz'},
   
   ${eventData.groomName} & ${eventData.brideName}'ın düğün törenine davetlisiniz!
   
-  📅 Tarih: 30 Ağustos 2025
-  🕐 Saat: 16:00
+  📅 Tarih: ${formattedDate}
+  🕐 Saat: ${formattedTime}
   📍 Mekan: ${eventData.location}
   
   Bu özel günümüzde yanımızda olmanızdan mutluluk duyacağız.
@@ -157,6 +169,7 @@ export default function Home() {
   Sevgiler,
   ${eventData.groomName} & ${eventData.brideName}`;
   };
+
   
   // Takvim ekleme fonksiyonları
   const addToGoogleCalendar = () => {
@@ -433,8 +446,8 @@ export default function Home() {
   };
 
   const weddingLocation = {
-    name: "Mercan Korupark",
-    address: "Mercan Korupark, Merkez, Sahil Yolu Cd. No:56, 61310 Akçaabat/Trabzon",
+    name: eventData.locationName,
+    address: eventData.location,
   };
 
   const uploadNote = async () => {
@@ -453,7 +466,7 @@ export default function Home() {
       const sanitizedName = userName.trim().replace(/[^a-zA-Z0-9çğıöşüÇĞIİÖŞÜ\s]/g, '').replace(/\s+/g, '_');
       const timestamp = new Date().toLocaleString('tr-TR').replace(/[/:]/g, '-').replace(/\s/g, '_');
       const fileName = `${sanitizedName}_f_Not${timestamp}.txt`;
-      
+
       // Not içeriğini oluştur
       const noteContent = `Gönderen: ${userName}\nTarih: ${new Date().toLocaleString('tr-TR')}\n\nMesaj:\n${noteText}`;
       
@@ -473,9 +486,9 @@ export default function Home() {
   // Geri Sayım Fonksiyonu - useCallback ile stable hale getir
   const calculateTimeLeft = useCallback(() => {
     const now = new Date().getTime();
-    const wedding = weddingDate.getTime();
+    const wedding = eventData.startDate.getTime();
     const difference = wedding - now;
-
+    
     if (difference > 0) {
       return {
         days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -485,7 +498,7 @@ export default function Home() {
       };
     }
     return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-  }, [weddingDate]);
+  }, [eventData.startDate]);
   
   // Geri sayım timer - stable dependencies
   useEffect(() => {
@@ -892,7 +905,7 @@ export default function Home() {
 
   // Buraya ekle:
   const openInMaps = () => {
-    const searchTerm = "Mercan Korupark Akçaabat Trabzon";
+    const searchTerm = eventData.location;
     const url = `https://www.google.com/maps/search/${encodeURIComponent(searchTerm)}`;
     window.open(url, '_blank');
   };
@@ -1055,7 +1068,9 @@ export default function Home() {
           </div>
           <div className="bg-white from-white-500 text-black p-2 rounded-lg shadow-lg text-center">
             <div className="text-sm text-gray-600 mb-3 font-medium">
-              📅 30 Ağustos 2025 - Saat 16:00
+              <div className="text-sm text-gray-600 mb-3 font-medium">
+                📅 {eventData.startDate.toLocaleDateString('tr-TR')} - {eventData.startDate.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
+              </div>
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
               <div className="bg-gray-200 rounded-lg p-1">
